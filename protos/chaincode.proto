@@ -59,13 +59,7 @@ message ChaincodeInput {
 // defining a chaincode.
 message ChaincodeSpec {
 
-    enum Type {
-        UNDEFINED = 0;
-        GOLANG = 1;
-        NODE = 2;
-    }
-
-    Type type = 1;
+    reserved 1;
     ChaincodeID chaincodeID = 2;
     ChaincodeInput ctorMsg = 3;
     int32 timeout = 4;
