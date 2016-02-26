@@ -29,6 +29,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"net/http"
+	"io/ioutil"
 
 	"golang.org/x/net/context"
 
@@ -107,25 +109,57 @@ func GetChaincodePackageBytes(spec *pb.ChaincodeSpec) ([]byte, error) {
 	if spec == nil || spec.ChaincodeID == nil {
 		return nil, fmt.Errorf("invalid chaincode spec")
 	}
+	if spec.ChaincodeID.Path == "" {
+		return nil, fmt.Errorf("Cannot generate hashcode from empty chaincode path")
+	}
 	if spec.ChaincodeID.Name != "" {
 		return nil, fmt.Errorf("chaincode name exists")
 	}
 
+	path := spec.ChaincodeID.Path
+	var localpath string
+	var err error
+
+	if strings.HasPrefix(path, "http://") {
+		// The file is remote, so we need to download it to a temporary location first
+
+		var tmp *os.File
+		tmp, err = ioutil.TempFile("", "cca")
+		if err != nil {
+			return nil, fmt.Errorf("Error creating temporary file: %s", err)
+		}
+		defer os.Remove(tmp.Name())
+		defer tmp.Close()
+
+		resp, err := http.Get(path)
+		if err != nil {
+			return nil, fmt.Errorf("Error with HTTP GET: %s", err)
+		}
+		defer resp.Body.Close()
+
+		_, err = io.Copy(tmp, resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("Error downloading bytes: %s", err)
+		}
+
+		localpath = tmp.Name()
+	} else {
+		localpath = path
+	}
+
 	inputbuf := bytes.NewBuffer(nil)
 	gw := gzip.NewWriter(inputbuf)
-	tw := tar.NewWriter(gw)
+	defer gw.Close()
 
-	var err error
-	spec.ChaincodeID.Name, err = generateHashcode(spec, tw)
+	tw := tar.NewWriter(gw)
+	defer tw.Close()
+
+	spec.ChaincodeID.Name, err = generateHashcode(spec, localpath)
 	if err != nil {
-		tw.Close()
-		gw.Close()
 		return nil, fmt.Errorf("Error generating hashcode: %s", err)
 	}
-	err = writeChaincodePackage(spec, tw)
+	err = writeChaincodePackage(spec, localpath, tw)
 	if err != nil {
-		tw.Close()
-		gw.Close()
 		return nil, fmt.Errorf("Error writing chaincode package: %s", err)
 	}
 
@@ -228,43 +262,34 @@ func (vm *VM) getPackageBytes(writerFunc func(*tar.Writer) error) (io.Reader, er
 
 //tw is expected to have the chaincode in it from GenerateHashcode. This method
 //will just package rest of the bytes
-func writeChaincodePackage(spec *pb.ChaincodeSpec, tw *tar.Writer) error {
-
-	var urlLocation string
-	if strings.HasPrefix(spec.ChaincodeID.Path, "http://") {
-		urlLocation = spec.ChaincodeID.Path[7:]
-	} else if strings.HasPrefix(spec.ChaincodeID.Path, "https://") {
-		urlLocation = spec.ChaincodeID.Path[8:]
-	} else {
-		urlLocation = spec.ChaincodeID.Path
-	}
-
-	if urlLocation == "" {
-		return fmt.Errorf("empty url location")
-	}
-
-	if strings.LastIndex(urlLocation, "/") == len(urlLocation)-1 {
-		urlLocation = urlLocation[:len(urlLocation)-1]
-	}
-	toks := strings.Split(urlLocation, "/")
-	if toks == nil || len(toks) == 0 {
-		return fmt.Errorf("cannot get path components from %s", urlLocation)
-	}
+func writeChaincodePackage(spec *pb.ChaincodeSpec, path string, tw *tar.Writer) error {
 
 	//let the executable's name be chaincode ID's name
-	newRunLine := fmt.Sprintf("RUN DIR=`mktemp`; cd $DIR && curl -o package.cca %s && obcc unpack -d chaincode package.cca && obcc build -p ./chaincode -o $GOPATH/bin/%s && cd /tmp && rm -rf $DIR", spec.ChaincodeID.Path, spec.ChaincodeID.Name)
+	newRunLine := fmt.Sprintf("COPY package.cca /tmp/package.cca\nRUN obcc buildcca /tmp/package.cca -o $GOPATH/bin/%s && rm /tmp/package.cca", spec.ChaincodeID.Name)
 
-	dockerFileContents := fmt.Sprintf("%s\n%s", viper.GetString("chaincode.golang.Dockerfile"), newRunLine)
+	dockerFileContents := fmt.Sprintf("%s\n%s", viper.GetString("chaincode.cca.Dockerfile"), newRunLine)
 	dockerFileSize := int64(len([]byte(dockerFileContents)))
+
+	info, err := os.Lstat(path)
+	if err != nil {
+		return fmt.Errorf("Error lstat on archive: %s", err)
+	}
+
+	is, err := os.Open(path)
+	if err != nil {
+		return fmt.Errorf("Error opening archive: %s", err)
+	}
+	defer is.Close()
 
 	//Make headers identical by using zero time
 	var zeroTime time.Time
 	tw.WriteHeader(&tar.Header{Name: "Dockerfile", Size: dockerFileSize, ModTime: zeroTime, AccessTime: zeroTime, ChangeTime: zeroTime})
 	tw.Write([]byte(dockerFileContents))
-	err := writeGopathSrc(tw, urlLocation)
-	if err != nil {
-		return fmt.Errorf("Error writing Chaincode package contents: %s", err)
+	tw.WriteHeader(&tar.Header{Name: "package.cca", Size: info.Size(), ModTime: zeroTime, AccessTime: zeroTime, ChangeTime: zeroTime})
+	if _, err := io.Copy(tw, is); err != nil {
+		return fmt.Errorf("Error copying package into docker payload: %s", err)
 	}
+
 	return nil
 }
 
