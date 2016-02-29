@@ -263,10 +263,6 @@ func CheckSpec(spec *pb.ChaincodeSpec) error {
 		return errors.New("Expected chaincode specification, nil received")
 	}
 
-	// Only allow GOLANG type at the moment
-	if spec.Type != pb.ChaincodeSpec_GOLANG {
-		return fmt.Errorf("Only support '%s' currently", pb.ChaincodeSpec_GOLANG)
-	}
 	if err := checkGolangSpec(spec); err != nil {
 		return err
 	}

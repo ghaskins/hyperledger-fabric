@@ -40,29 +40,6 @@ func (x ConfidentialityLevel) String() string {
 	return proto.EnumName(ConfidentialityLevel_name, int32(x))
 }
 
-type ChaincodeSpec_Type int32
-
-const (
-	ChaincodeSpec_UNDEFINED ChaincodeSpec_Type = 0
-	ChaincodeSpec_GOLANG    ChaincodeSpec_Type = 1
-	ChaincodeSpec_NODE      ChaincodeSpec_Type = 2
-)
-
-var ChaincodeSpec_Type_name = map[int32]string{
-	0: "UNDEFINED",
-	1: "GOLANG",
-	2: "NODE",
-}
-var ChaincodeSpec_Type_value = map[string]int32{
-	"UNDEFINED": 0,
-	"GOLANG":    1,
-	"NODE":      2,
-}
-
-func (x ChaincodeSpec_Type) String() string {
-	return proto.EnumName(ChaincodeSpec_Type_name, int32(x))
-}
-
 type ChaincodeMessage_Type int32
 
 const (
@@ -169,7 +146,6 @@ func (*ChaincodeInput) ProtoMessage()    {}
 // Carries the chaincode specification. This is the actual metadata required for
 // defining a chaincode.
 type ChaincodeSpec struct {
-	Type                 ChaincodeSpec_Type   `protobuf:"varint,1,opt,name=type,enum=protos.ChaincodeSpec_Type" json:"type,omitempty"`
 	ChaincodeID          *ChaincodeID         `protobuf:"bytes,2,opt,name=chaincodeID" json:"chaincodeID,omitempty"`
 	CtorMsg              *ChaincodeInput      `protobuf:"bytes,3,opt,name=ctorMsg" json:"ctorMsg,omitempty"`
 	Timeout              int32                `protobuf:"varint,4,opt,name=timeout" json:"timeout,omitempty"`
@@ -371,7 +347,6 @@ func (m *RangeQueryStateResponse) GetKeysAndValues() []*RangeQueryStateKeyValue 
 
 func init() {
 	proto.RegisterEnum("protos.ConfidentialityLevel", ConfidentialityLevel_name, ConfidentialityLevel_value)
-	proto.RegisterEnum("protos.ChaincodeSpec_Type", ChaincodeSpec_Type_name, ChaincodeSpec_Type_value)
 	proto.RegisterEnum("protos.ChaincodeMessage_Type", ChaincodeMessage_Type_name, ChaincodeMessage_Type_value)
 }
 

@@ -129,7 +129,7 @@ func MakeGenesis() error {
 				var spec protos.ChaincodeSpec
 				if constructorMap == nil {
 					genesisLogger.Debug("Genesis chaincode has no constructor.")
-					spec = protos.ChaincodeSpec{Type: protos.ChaincodeSpec_Type(protos.ChaincodeSpec_Type_value[chaincodeType]), ChaincodeID: chaincodeID}
+					spec = protos.ChaincodeSpec{ChaincodeID: chaincodeID}
 				} else {
 	
 					ctorFunc, ctorFuncOK := constructorMap["func"].(string)
@@ -153,7 +153,7 @@ func MakeGenesis() error {
 						ctorArgsStringArray = append(ctorArgsStringArray, ctorArgs[j].(string))
 					}
 	
-					spec = protos.ChaincodeSpec{Type: protos.ChaincodeSpec_Type(protos.ChaincodeSpec_Type_value[chaincodeType]), ChaincodeID: chaincodeID, CtorMsg: &protos.ChaincodeInput{Function: ctorFunc, Args: ctorArgsStringArray}}
+					spec = protos.ChaincodeSpec{ChaincodeID: chaincodeID, CtorMsg: &protos.ChaincodeInput{Function: ctorFunc, Args: ctorArgsStringArray}}
 				}
 	
 				transaction, _, deployErr := DeployLocal(context.Background(), &spec)
@@ -240,7 +240,7 @@ func deployUpdateValidityPeriodChaincode() (*protos.Transaction, error) {
 
 	var vpCtorArgsStringArray []string
 
-	validityPeriodSpec := &protos.ChaincodeSpec{Type: protos.ChaincodeSpec_GOLANG,
+	validityPeriodSpec := &protos.ChaincodeSpec{
 		ChaincodeID: &protos.ChaincodeID{Path: vpChaincodePath,
 			Name: "",
 		},
