@@ -89,6 +89,19 @@ func TestVM_BuildImage_Obcca(t *testing.T) {
 	}
 }
 
+func TestVM_BuildImage_ChaincodeBase(t *testing.T) {
+	vm, err := NewVM()
+	if err != nil {
+		t.Fail()
+		t.Logf("Error getting VM: %s", err)
+		return
+	}
+	if err := vm.BuildChaincodeBaseContainer(); err != nil {
+		t.Fail()
+		t.Log(err)
+	}
+}
+
 func TestVM_BuildImage_ChaincodeLocal(t *testing.T) {
 	vm, err := NewVM()
 	if err != nil {

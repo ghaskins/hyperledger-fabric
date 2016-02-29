@@ -231,6 +231,26 @@ func (vm *VM) BuildObccaContainer() error {
 	return nil
 }
 
+// BuildChaincodeBaseContainer builds the base-image for the chaincode
+func (vm *VM) BuildChaincodeBaseContainer() error {
+	inputbuf, err := vm.getPackageBytes(vm.writeChaincodeBasePackage)
+
+	if err != nil {
+		return fmt.Errorf("Error building chaincode-base container: %s", err)
+	}
+	outputbuf := bytes.NewBuffer(nil)
+	opts := docker.BuildImageOptions{
+		Name:         "chaincode-base",
+		InputStream:  inputbuf,
+		OutputStream: outputbuf,
+	}
+	if err := vm.Client.BuildImage(opts); err != nil {
+		vmLogger.Debug(fmt.Sprintf("Failed chaincode-base docker build:\n%s\n", outputbuf.String()))
+		return fmt.Errorf("Error building chaincode-base container: %s\n", err)
+	}
+	return nil
+}
+
 // GetPeerPackageBytes returns the gzipped tar image used for docker build of Peer
 func (vm *VM) GetPeerPackageBytes() (io.Reader, error) {
 	inputbuf := bytes.NewBuffer(nil)
@@ -265,12 +285,12 @@ func (vm *VM) getPackageBytes(writerFunc func(*tar.Writer) error) (io.Reader, er
 func writeFileToPackage(fqpath string, filename string, tw *tar.Writer) error {
 	info, err := os.Lstat(fqpath)
 	if err != nil {
-		return fmt.Errorf("Error lstat on archive: %s", err)
+		return fmt.Errorf("Error lstat on %s: %s", fqpath, err)
 	}
 
 	fd, err := os.Open(fqpath)
 	if err != nil {
-		return fmt.Errorf("Error opening archive: %s", err)
+		return fmt.Errorf("Error opening %s: %s", fqpath, err)
 	}
 	defer fd.Close()
 
@@ -301,7 +321,7 @@ func writeObccToPackage(tw *tar.Writer) error {
 	cmd := exec.Command("which", "obcc")
 	path, err := cmd.Output()
 	if err != nil {
-		fmt.Errorf("Error determining obcc path dynamically")
+		return fmt.Errorf("Error determining obcc path dynamically")
 	}
 
 	return writeFileToPackage(string(path), "obcc", tw)
@@ -309,16 +329,11 @@ func writeObccToPackage(tw *tar.Writer) error {
 
 func writeChaincodePackage(spec *pb.ChaincodeSpec, path string, tw *tar.Writer) error {
 
-	copyobcc := viper.GetBool("chaincode.obcc.copyhost")
-
 	buf := make([]string, 0)
 
 	//let the executable's name be chaincode ID's name
-	buf = append(buf, viper.GetString("chaincode.Dockerfile"))
+	buf = append(buf, "FROM chaincode-base")
 	buf = append(buf, "COPY package.cca /tmp/package.cca")
-	if copyobcc {
-		buf = append(buf, "COPY obcc /usr/local/bin")
-	}
 	buf = append(buf, fmt.Sprintf("RUN obcc buildcca /tmp/package.cca -o $GOPATH/bin/%s && rm /tmp/package.cca", spec.ChaincodeID.Name))
 
 	dockerFileContents := strings.Join(buf, "\n")
@@ -333,13 +348,6 @@ func writeChaincodePackage(spec *pb.ChaincodeSpec, path string, tw *tar.Writer) 
 	err = writeFileToPackage(path, "package.cca", tw)
 	if err != nil {
 		return err
-	}
-
-	if copyobcc {
-		err = writeObccToPackage(tw)
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil
@@ -373,6 +381,37 @@ func (vm *VM) writeObccaPackage(tw *tar.Writer) error {
 	if err != nil {
 		return fmt.Errorf("Error writing obcca package contents: %s", err)
 	}
+	return nil
+}
+
+func (vm *VM) writeChaincodeBasePackage(tw *tar.Writer) error {
+
+	copyobcc := viper.GetBool("chaincode.obcc.copyhost")
+
+	buf := make([]string, 0)
+
+	buf = append(buf, viper.GetString("chaincode.Dockerfile"))
+	if copyobcc {
+		buf = append(buf, "COPY obcc /usr/local/bin")
+	} else {
+		buf = append(buf, "RUN apt-get install --yes obcc")
+	}
+
+	dockerFileContents := strings.Join(buf, "\n")
+	dockerFileSize := int64(len([]byte(dockerFileContents)))
+
+	//Make headers identical by using zero time
+	var zeroTime time.Time
+	tw.WriteHeader(&tar.Header{Name: "Dockerfile", Size: dockerFileSize, ModTime: zeroTime, AccessTime: zeroTime, ChangeTime: zeroTime})
+	tw.Write([]byte(dockerFileContents))
+
+	if copyobcc {
+		err := writeObccToPackage(tw)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
