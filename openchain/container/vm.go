@@ -283,16 +283,16 @@ func (vm *VM) getPackageBytes(writerFunc func(*tar.Writer) error) (io.Reader, er
 }
 
 func writeFileToPackage(fqpath string, filename string, tw *tar.Writer) error {
-	info, err := os.Lstat(fqpath)
-	if err != nil {
-		return fmt.Errorf("Error lstat on %s: %s", fqpath, err)
-	}
-
 	fd, err := os.Open(fqpath)
 	if err != nil {
-		return fmt.Errorf("Error opening %s: %s", fqpath, err)
+		return fmt.Errorf("%s: %s", fqpath, err)
 	}
 	defer fd.Close()
+
+	info, err := os.Stat(fqpath)
+	if err != nil {
+		return fmt.Errorf("%s: %s", fqpath, err)
+	}
 
 	is := bufio.NewReader(fd)
 
@@ -324,7 +324,7 @@ func writeObccToPackage(tw *tar.Writer) error {
 		return fmt.Errorf("Error determining obcc path dynamically")
 	}
 
-	return writeFileToPackage(string(path), "obcc", tw)
+	return writeFileToPackage(strings.Trim(string(path), "\n"), "obcc", tw)
 }
 
 func writeChaincodePackage(spec *pb.ChaincodeSpec, path string, tw *tar.Writer) error {
