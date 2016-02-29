@@ -110,30 +110,31 @@ func TestVM_BuildImage_ChaincodeLocal(t *testing.T) {
 		return
 	}
 	// Build the spec
-	chaincodePath := "github.com/openblockchain/obc-peer/openchain/example/chaincode/chaincode_example01"
-	spec := &pb.ChaincodeSpec{Type: pb.ChaincodeSpec_GOLANG, ChaincodeID: &pb.ChaincodeID{Path: chaincodePath}, CtorMsg: &pb.ChaincodeInput{Function: "f"}}
+	chaincodePath := "github.com/openblockchain/obc-peer/openchain/example/chaincode/chaincode_example02.cca"
+	spec := &pb.ChaincodeSpec{ChaincodeID: &pb.ChaincodeID{Path: chaincodePath}, CtorMsg: &pb.ChaincodeInput{Function: "f"}}
 	if _, err := vm.BuildChaincodeContainer(spec); err != nil {
 		t.Fail()
 		t.Log(err)
 	}
 }
 
-func TestVM_BuildImage_ChaincodeRemote(t *testing.T) {
-	t.Skip("Works but needs user credentials. Not suitable for automated unit tests as is")
-	vm, err := NewVM()
-	if err != nil {
-		t.Fail()
-		t.Logf("Error getting VM: %s", err)
-		return
-	}
-	// Build the spec
-	chaincodePath := "https://github.com/prjayach/chaincode_examples/chaincode_example02"
-	spec := &pb.ChaincodeSpec{Type: pb.ChaincodeSpec_GOLANG, ChaincodeID: &pb.ChaincodeID{Path: chaincodePath}, CtorMsg: &pb.ChaincodeInput{Function: "f"}}
-	if _, err := vm.BuildChaincodeContainer(spec); err != nil {
-		t.Fail()
-		t.Log(err)
-	}
-}
+// FIXME: Not yet
+//func TestVM_BuildImage_ChaincodeRemote(t *testing.T) {
+//	t.Skip("Works but needs user credentials. Not suitable for automated unit tests as is")
+//	vm, err := NewVM()
+//	if err != nil {
+//		t.Fail()
+//		t.Logf("Error getting VM: %s", err)
+//		return
+//	}
+//	// Build the spec
+//	chaincodePath := "https://github.com/prjayach/chaincode_examples/chaincode_example02.cca"
+//	spec := &pb.ChaincodeSpec{ChaincodeID: &pb.ChaincodeID{Path: chaincodePath}, CtorMsg: &pb.ChaincodeInput{Function: "f"}}
+//	if _, err := vm.BuildChaincodeContainer(spec); err != nil {
+//		t.Fail()
+//		t.Log(err)
+//	}
+//}
 
 func TestVM_Chaincode_Compile(t *testing.T) {
 	// vm, err := NewVM()
