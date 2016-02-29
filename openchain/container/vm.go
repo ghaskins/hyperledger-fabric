@@ -31,6 +31,8 @@ import (
 	"time"
 	"net/http"
 	"io/ioutil"
+	"bufio"
+	"os/exec"
 
 	"golang.org/x/net/context"
 
@@ -260,34 +262,84 @@ func (vm *VM) getPackageBytes(writerFunc func(*tar.Writer) error) (io.Reader, er
 	return inputbuf, nil
 }
 
-//tw is expected to have the chaincode in it from GenerateHashcode. This method
-//will just package rest of the bytes
-func writeChaincodePackage(spec *pb.ChaincodeSpec, path string, tw *tar.Writer) error {
-
-	//let the executable's name be chaincode ID's name
-	newRunLine := fmt.Sprintf("COPY package.cca /tmp/package.cca\nRUN obcc buildcca /tmp/package.cca -o $GOPATH/bin/%s && rm /tmp/package.cca", spec.ChaincodeID.Name)
-
-	dockerFileContents := fmt.Sprintf("%s\n%s", viper.GetString("chaincode.cca.Dockerfile"), newRunLine)
-	dockerFileSize := int64(len([]byte(dockerFileContents)))
-
-	info, err := os.Lstat(path)
+func writeFileToPackage(fqpath string, filename string, tw *tar.Writer) error {
+	info, err := os.Lstat(fqpath)
 	if err != nil {
 		return fmt.Errorf("Error lstat on archive: %s", err)
 	}
 
-	is, err := os.Open(path)
+	fd, err := os.Open(fqpath)
 	if err != nil {
 		return fmt.Errorf("Error opening archive: %s", err)
 	}
-	defer is.Close()
+	defer fd.Close()
+
+	is := bufio.NewReader(fd)
+
+	header, err := tar.FileInfoHeader(info, fqpath)
+	if err != nil {
+		return fmt.Errorf("Error getting FileInfoHeader: %s", err)
+	}
+
+	//Let's take the variance out of the tar, make headers identical by using zero time
+	var zeroTime time.Time
+	header.AccessTime = zeroTime
+	header.ModTime = zeroTime
+	header.ChangeTime = zeroTime
+	header.Name = filename
+
+	tw.WriteHeader(header)
+	if _, err := io.Copy(tw, is); err != nil {
+		return fmt.Errorf("Error copying package into docker payload: %s", err)
+	}
+
+	return nil
+}
+
+// Find the instance of obcc installed on the host's $PATH and inject it into the package
+func writeObccToPackage(tw *tar.Writer) error {
+	cmd := exec.Command("which", "obcc")
+	path, err := cmd.Output()
+	if err != nil {
+		fmt.Errorf("Error determining obcc path dynamically")
+	}
+
+	return writeFileToPackage(string(path), "obcc", tw)
+}
+
+func writeChaincodePackage(spec *pb.ChaincodeSpec, path string, tw *tar.Writer) error {
+
+	copyobcc := viper.GetBool("chaincode.obcc.copyhost")
+
+	buf := make([]string, 0)
+
+	//let the executable's name be chaincode ID's name
+	buf = append(buf, viper.GetString("chaincode.Dockerfile"))
+	buf = append(buf, "COPY package.cca /tmp/package.cca")
+	if copyobcc {
+		buf = append(buf, "COPY obcc /usr/local/bin")
+	}
+	buf = append(buf, fmt.Sprintf("RUN obcc buildcca /tmp/package.cca -o $GOPATH/bin/%s && rm /tmp/package.cca", spec.ChaincodeID.Name))
+
+	dockerFileContents := strings.Join(buf, "\n")
+	dockerFileSize := int64(len([]byte(dockerFileContents)))
 
 	//Make headers identical by using zero time
 	var zeroTime time.Time
 	tw.WriteHeader(&tar.Header{Name: "Dockerfile", Size: dockerFileSize, ModTime: zeroTime, AccessTime: zeroTime, ChangeTime: zeroTime})
 	tw.Write([]byte(dockerFileContents))
-	tw.WriteHeader(&tar.Header{Name: "package.cca", Size: info.Size(), ModTime: zeroTime, AccessTime: zeroTime, ChangeTime: zeroTime})
-	if _, err := io.Copy(tw, is); err != nil {
-		return fmt.Errorf("Error copying package into docker payload: %s", err)
+
+	var err error
+	err = writeFileToPackage(path, "package.cca", tw)
+	if err != nil {
+		return err
+	}
+
+	if copyobcc {
+		err = writeObccToPackage(tw)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
