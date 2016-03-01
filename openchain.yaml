@@ -98,8 +98,6 @@ peer:
         RUN mkdir -p /var/openchain/db
         WORKDIR $GOPATH/src/github.com/openblockchain/obc-peer/
         RUN CGO_LDFLAGS="-lrocksdb -lstdc++ -lm -lz -lbz2 -lsnappy" go install && cp $GOPATH/src/github.com/openblockchain/obc-peer/openchain.yaml $GOPATH/bin
-        # Copy any dev-env tools
-        COPY /sandbox/git/obcc/target/obcc /usr/local/bin
 
 
     # The Address this Peer will listen on
@@ -280,7 +278,7 @@ chaincode:
     # This is the basis for the chaincode Dockerfile.  Additional commands will
     # be appended depedendent upon the chaincode specification.
     Dockerfile:  |
-        from openblockchain/baseimage
+        from openchain-peer
         WORKDIR $GOPATH
 
     # OBC-compiler settings

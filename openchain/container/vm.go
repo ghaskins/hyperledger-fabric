@@ -316,15 +316,15 @@ func writeFileToPackage(fqpath string, filename string, tw *tar.Writer) error {
 	return nil
 }
 
-// Find the instance of obcc installed on the host's $PATH and inject it into the package
-func writeObccToPackage(tw *tar.Writer) error {
-	cmd := exec.Command("which", "obcc")
+// Find the instance of "bin" installed on the host's $PATH and inject it into the package
+func writeExecutableToPackage(bin string, tw *tar.Writer) error {
+	cmd := exec.Command("which", bin)
 	path, err := cmd.Output()
 	if err != nil {
-		return fmt.Errorf("Error determining obcc path dynamically")
+		return fmt.Errorf("Error determining %s path dynamically", bin)
 	}
 
-	return writeFileToPackage(strings.Trim(string(path), "\n"), "obcc", tw)
+	return writeFileToPackage(strings.Trim(string(path), "\n"), bin, tw)
 }
 
 func writeChaincodePackage(spec *pb.ChaincodeSpec, path string, tw *tar.Writer) error {
@@ -391,6 +391,7 @@ func (vm *VM) writeChaincodeBasePackage(tw *tar.Writer) error {
 	buf := make([]string, 0)
 
 	buf = append(buf, viper.GetString("chaincode.Dockerfile"))
+	buf = append(buf, "COPY protoc-gen-go $GOPATH/bin")
 	if copyobcc {
 		buf = append(buf, "COPY obcc /usr/local/bin")
 	} else {
@@ -405,8 +406,13 @@ func (vm *VM) writeChaincodeBasePackage(tw *tar.Writer) error {
 	tw.WriteHeader(&tar.Header{Name: "Dockerfile", Size: dockerFileSize, ModTime: zeroTime, AccessTime: zeroTime, ChangeTime: zeroTime})
 	tw.Write([]byte(dockerFileContents))
 
+	err := writeExecutableToPackage("protoc-gen-go", tw)
+	if err != nil {
+		return err
+	}
+
 	if copyobcc {
-		err := writeObccToPackage(tw)
+		err := writeExecutableToPackage("obcc", tw)
 		if err != nil {
 			return err
 		}
