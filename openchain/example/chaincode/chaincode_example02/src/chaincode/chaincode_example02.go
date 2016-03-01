@@ -25,7 +25,6 @@ import (
 	"strconv"
 
 	ccs "chaincode_support"
-	"github.com/golang/protobuf/proto"
 	"github.com/openblockchain/obc-peer/openchain/chaincode/shim"
 )
 
@@ -114,7 +113,7 @@ func (t *ChaincodeExample) CheckBalance(stub *shim.ChaincodeStub, param *ccs.Ent
 	}
 
 	fmt.Printf("Query Response: %d\n", val)
-	return &ccs.BalanceResult{Balance: proto.Int32(int32(val))}, nil
+	return &ccs.BalanceResult{Balance: int32(val)}, nil
 }
 
 func main() {
