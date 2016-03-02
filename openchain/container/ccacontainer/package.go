@@ -14,12 +14,12 @@ func WritePackage(spec *pb.ChaincodeSpec, tw *tar.Writer) error {
 
 	path, err := cutil.Download(spec.ChaincodeID.Path)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	spec.ChaincodeID.Name, err = generateHashcode(spec, path)
 	if err != nil {
-		return nil, fmt.Errorf("Error generating hashcode: %s", err)
+		return fmt.Errorf("Error generating hashcode: %s", err)
 	}
 
 	copyobcc := viper.GetBool("chaincode.obcc.copyhost")
@@ -44,8 +44,7 @@ func WritePackage(spec *pb.ChaincodeSpec, tw *tar.Writer) error {
 	var zeroTime time.Time
 	tw.WriteHeader(&tar.Header{Name: "Dockerfile", Size: dockerFileSize, ModTime: zeroTime, AccessTime: zeroTime, ChangeTime: zeroTime})
 	tw.Write([]byte(dockerFileContents))
-
-	var err error
+	
 	err = cutil.WriteFileToPackage(path, "package.cca", tw)
 	if err != nil {
 		return err

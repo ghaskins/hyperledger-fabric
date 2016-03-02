@@ -17,20 +17,20 @@ func Download(path string) (string, error) {
 		var err error
 		tmp, err = ioutil.TempFile("", "obc")
 		if err != nil {
-			return nil, fmt.Errorf("Error creating temporary file: %s", err)
+			return "", fmt.Errorf("Error creating temporary file: %s", err)
 		}
 		defer os.Remove(tmp.Name())
 		defer tmp.Close()
 
 		resp, err := http.Get(path)
 		if err != nil {
-			return nil, fmt.Errorf("Error with HTTP GET: %s", err)
+			return "", fmt.Errorf("Error with HTTP GET: %s", err)
 		}
 		defer resp.Body.Close()
 
 		_, err = io.Copy(tmp, resp.Body)
 		if err != nil {
-			return nil, fmt.Errorf("Error downloading bytes: %s", err)
+			return "", fmt.Errorf("Error downloading bytes: %s", err)
 		}
 
 		return tmp.Name(), nil
