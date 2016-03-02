@@ -6,38 +6,34 @@ import (
 	"github.com/spf13/viper"
 	"strings"
 	"time"
-	"archive/tar"
-	"bytes"
-	"compress/gzip"
-	"fmt"
-	"io"
-	"os"
-	"path/filepath"
-	"strings"
-	"time"
-	"net/http"
-	"io/ioutil"
-	"bufio"
-	"os/exec"
-
-	"golang.org/x/net/context"
-
-	"github.com/spf13/viper"
-
-	"github.com/fsouza/go-dockerclient"
-	"github.com/op/go-logging"
-
-
 	cutil "github.com/openblockchain/obc-peer/openchain/container/util"
 	pb "github.com/openblockchain/obc-peer/protos"
 )
 
-func writeChaincodePackage(spec *pb.ChaincodeSpec, path string, tw *tar.Writer) error {
+func WritePackage(spec *pb.ChaincodeSpec, tw *tar.Writer) error {
+
+	path, err := cutil.Download(spec.ChaincodeID.Path)
+	if err != nil {
+		return nil
+	}
+
+	spec.ChaincodeID.Name, err = generateHashcode(spec, path)
+	if err != nil {
+		return nil, fmt.Errorf("Error generating hashcode: %s", err)
+	}
+
+	copyobcc := viper.GetBool("chaincode.obcc.copyhost")
 
 	buf := make([]string, 0)
 
 	//let the executable's name be chaincode ID's name
-	buf = append(buf, "FROM chaincode-base")
+	buf = append(buf, viper.GetString("chaincode.Dockerfile"))
+	buf = append(buf, "COPY protoc-gen-go $GOPATH/bin")
+	if copyobcc {
+		buf = append(buf, "COPY obcc /usr/local/bin")
+	} else {
+		buf = append(buf, "RUN apt-get install --yes obcc")
+	}
 	buf = append(buf, "COPY package.cca /tmp/package.cca")
 	buf = append(buf, fmt.Sprintf("RUN obcc buildcca /tmp/package.cca -o $GOPATH/bin/%s && rm /tmp/package.cca", spec.ChaincodeID.Name))
 
@@ -55,24 +51,16 @@ func writeChaincodePackage(spec *pb.ChaincodeSpec, path string, tw *tar.Writer) 
 		return err
 	}
 
-	return nil
-}
-
-func WritePackage(spec *pb.ChaincodeSpec, tw *tar.Writer) error {
-
-	path, err := cutil.Download(spec.ChaincodeID.Path)
+	err = cutil.WriteExecutableToPackage("protoc-gen-go", tw)
 	if err != nil {
-		return nil
+		return err
 	}
 
-	spec.ChaincodeID.Name, err = generateHashcode(spec, path)
-	if err != nil {
-		return nil, fmt.Errorf("Error generating hashcode: %s", err)
-	}
-
-	err = writeChaincodePackage(spec, path, tw)
-	if err != nil {
-		return nil, fmt.Errorf("Error writing chaincode package: %s", err)
+	if copyobcc {
+		err := cutil.WriteExecutableToPackage("obcc", tw)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
