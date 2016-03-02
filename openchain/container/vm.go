@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"io"
 	"time"
+	"strings"
 
 	"golang.org/x/net/context"
 
@@ -35,6 +36,7 @@ import (
 	"github.com/op/go-logging"
 	cutil "github.com/openblockchain/obc-peer/openchain/container/util"
 	"github.com/openblockchain/obc-peer/openchain/container/golangcontainer"
+	"github.com/openblockchain/obc-peer/openchain/container/ccacontainer"
 	pb "github.com/openblockchain/obc-peer/protos"
 )
 
@@ -118,6 +120,8 @@ func GetChaincodePackageBytes(spec *pb.ChaincodeSpec) ([]byte, error) {
 	switch spec.Type {
 	case pb.ChaincodeSpec_GOLANG:
 		err = golangcontainer.WritePackage(spec, tw)
+	case pb.ChaincodeSpec_CCA:
+		err = ccacontainer.WritePackage(spec, tw)
 	default:
 		err = fmt.Errorf("Unsupported chaincode type: %s", spec.Type)
 	}
@@ -192,6 +196,26 @@ func (vm *VM) BuildObccaContainer() error {
 	return nil
 }
 
+// BuildChaincodeBaseContainer builds the base-image for the chaincode
+func (vm *VM) BuildChaincodeBaseContainer() error {
+	inputbuf, err := vm.getPackageBytes(vm.writeChaincodeBasePackage)
+
+	if err != nil {
+		return fmt.Errorf("Error building chaincode-base container: %s", err)
+	}
+	outputbuf := bytes.NewBuffer(nil)
+	opts := docker.BuildImageOptions{
+		Name:         "chaincode-base",
+		InputStream:  inputbuf,
+		OutputStream: outputbuf,
+	}
+	if err := vm.Client.BuildImage(opts); err != nil {
+		vmLogger.Debug(fmt.Sprintf("Failed chaincode-base docker build:\n%s\n", outputbuf.String()))
+		return fmt.Errorf("Error building chaincode-base container: %s\n", err)
+	}
+	return nil
+}
+
 // GetPeerPackageBytes returns the gzipped tar image used for docker build of Peer
 func (vm *VM) GetPeerPackageBytes() (io.Reader, error) {
 	inputbuf := bytes.NewBuffer(nil)
@@ -252,5 +276,42 @@ func (vm *VM) writeObccaPackage(tw *tar.Writer) error {
 	if err != nil {
 		return fmt.Errorf("Error writing obcca package contents: %s", err)
 	}
+	return nil
+}
+
+func (vm *VM) writeChaincodeBasePackage(tw *tar.Writer) error {
+
+	copyobcc := viper.GetBool("chaincode.obcc.copyhost")
+
+	buf := make([]string, 0)
+
+	buf = append(buf, viper.GetString("chaincode.Dockerfile"))
+	buf = append(buf, "COPY protoc-gen-go $GOPATH/bin")
+	if copyobcc {
+		buf = append(buf, "COPY obcc /usr/local/bin")
+	} else {
+		buf = append(buf, "RUN apt-get install --yes obcc")
+	}
+
+	dockerFileContents := strings.Join(buf, "\n")
+	dockerFileSize := int64(len([]byte(dockerFileContents)))
+
+	//Make headers identical by using zero time
+	var zeroTime time.Time
+	tw.WriteHeader(&tar.Header{Name: "Dockerfile", Size: dockerFileSize, ModTime: zeroTime, AccessTime: zeroTime, ChangeTime: zeroTime})
+	tw.Write([]byte(dockerFileContents))
+
+	err := cutil.WriteExecutableToPackage("protoc-gen-go", tw)
+	if err != nil {
+		return err
+	}
+
+	if copyobcc {
+		err := cutil.WriteExecutableToPackage("obcc", tw)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
