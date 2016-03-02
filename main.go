@@ -135,6 +135,7 @@ var vmPrimeCmd = &cobra.Command{
 
 // Chaincode-related variables.
 var (
+	chaincodeLang     string
 	chaincodeCtorJSON string
 	chaincodePath     string
 	chaincodeName     string
@@ -234,6 +235,7 @@ func main() {
 	vmCmd.AddCommand(vmPrimeCmd)
 	mainCmd.AddCommand(vmCmd)
 
+	chaincodeCmd.PersistentFlags().StringVarP(&chaincodeLang, "lang", "l", "golang", fmt.Sprintf("Language the %s is written in", chainFuncName))
 	chaincodeCmd.PersistentFlags().StringVarP(&chaincodeCtorJSON, "ctor", "c", "{}", fmt.Sprintf("Constructor message for the %s in JSON format", chainFuncName))
 	chaincodeCmd.PersistentFlags().StringVarP(&chaincodePath, "path", "p", undefinedParamValue, fmt.Sprintf("Path to %s", chainFuncName))
 	chaincodeCmd.PersistentFlags().StringVarP(&chaincodeName, "name", "n", undefinedParamValue, fmt.Sprintf("Name of the chaincode returned by the deploy transaction"))
@@ -641,7 +643,8 @@ func chaincodeDeploy(cmd *cobra.Command, args []string) (err error) {
 		err = fmt.Errorf("Chaincode argument error: %s", err)
 		return
 	}
-	spec := &pb.ChaincodeSpec{ChaincodeID: &pb.ChaincodeID{Path: chaincodePath, Name: chaincodeName}, CtorMsg: input}
+	spec := &pb.ChaincodeSpec{Type: pb.ChaincodeSpec_GOLANG,
+		ChaincodeID: &pb.ChaincodeID{Path: chaincodePath, Name: chaincodeName}, CtorMsg: input}
 
 	// If security is enabled, add client login token
 	if viper.GetBool("security.enabled") {
@@ -730,8 +733,8 @@ func chaincodeInvokeOrQuery(cmd *cobra.Command, args []string, invoke bool) (err
 		err = fmt.Errorf("Chaincode argument error: %s", err)
 		return
 	}
-	spec := &pb.ChaincodeSpec{ChaincodeID: &pb.ChaincodeID{Name: chaincodeName},
-		CtorMsg: input}
+	spec := &pb.ChaincodeSpec{Type: pb.ChaincodeSpec_GOLANG,
+		ChaincodeID: &pb.ChaincodeID{Name: chaincodeName}, CtorMsg: input}
 
 	// If security is enabled, add client login token
 	if viper.GetBool("security.enabled") {
