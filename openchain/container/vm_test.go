@@ -111,7 +111,7 @@ func TestVM_BuildImage_ChaincodeLocal(t *testing.T) {
 	}
 	// Build the spec
 	chaincodePath := "/opt/gopath/src/github.com/openblockchain/obc-peer/openchain/example/chaincode/com.obc.chaincode.example02-0.1-SNAPSHOT.cca"
-	spec := &pb.ChaincodeSpec{ChaincodeID: &pb.ChaincodeID{Path: chaincodePath}, CtorMsg: &pb.ChaincodeInput{Function: "f"}}
+	spec := &pb.ChaincodeSpec{Type: pb.ChaincodeSpec_CCA, ChaincodeID: &pb.ChaincodeID{Path: chaincodePath}, CtorMsg: &pb.ChaincodeInput{Function: "f"}}
 	if _, err := vm.BuildChaincodeContainer(spec); err != nil {
 		t.Fail()
 		t.Log(err)
