@@ -63,5 +63,10 @@ func WritePackage(spec *pb.ChaincodeSpec, tw *tar.Writer) error {
 		}
 	}
 
+	err = cutil.WriteGopathSrc(tw, "")
+	if err != nil {
+		return fmt.Errorf("Error writing Chaincode package contents: %s", err)
+	}
+
 	return nil
 }
