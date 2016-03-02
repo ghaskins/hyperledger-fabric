@@ -78,10 +78,11 @@ cd $GOPATH/src/github.com/openblockchain/obc-peer/openchain/peer/bddtests
 behave
 ```
 
-Note, you must run the unit tests first to build the necessary Peer and OBCCA docker images. These images can also be individually built using the commands
+Note, you must run the unit tests first to build the necessary Peer, OBCCA, and Chaincode docker images. These images can also be individually built using the commands
 ```
 go test github.com/openblockchain/obc-peer/openchain/container -run=BuildImage_Peer
 go test github.com/openblockchain/obc-peer/openchain/container -run=BuildImage_Obcca
+go test github.com/openblockchain/obc-peer/openchain/container -run=BuildImage_ChaincodeBase
 ```
 
 ## Writing Chaincode
