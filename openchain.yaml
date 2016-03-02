@@ -275,11 +275,12 @@ chaincode:
         path:
         name:
 
-    # This is the basis for the chaincode Dockerfile.  Additional commands will
+    # This is the basis for the Dockerfile for chaincode.  Additional commands will
     # be appended depedendent upon the chaincode specification.
     Dockerfile:  |
-        from openchain-peer
-        WORKDIR $GOPATH
+         from openblockchain/baseimage
+         COPY src $GOPATH/src
+         WORKDIR $GOPATH
 
     # OBC-compiler settings
     obcc:
