@@ -28,7 +28,7 @@ func WritePackage(spec *pb.ChaincodeSpec, tw *tar.Writer) error {
 
 	//let the executable's name be chaincode ID's name
 	buf = append(buf, viper.GetString("chaincode.Dockerfile"))
-	buf = append(buf, "COPY protoc-gen-go $GOPATH/bin")
+	buf = append(buf, "COPY protoc-gen-go /usr/local/bin")
 	if copyobcc {
 		buf = append(buf, "COPY obcc /usr/local/bin")
 	} else {
