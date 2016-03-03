@@ -268,6 +268,7 @@ func CheckSpec(spec *pb.ChaincodeSpec) error {
 		if err := checkGolangSpec(spec); err != nil {
 			return err
 		}
+	case pb.ChaincodeSpec_CCA:
 	default:
 		return fmt.Errorf("Unsupported spec: %s", spec.Type)
 	}

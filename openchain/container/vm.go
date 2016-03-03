@@ -26,7 +26,6 @@ import (
 	"fmt"
 	"io"
 	"time"
-
 	"golang.org/x/net/context"
 
 	"github.com/spf13/viper"
@@ -35,6 +34,7 @@ import (
 	"github.com/op/go-logging"
 	cutil "github.com/openblockchain/obc-peer/openchain/container/util"
 	"github.com/openblockchain/obc-peer/openchain/container/golangcontainer"
+	"github.com/openblockchain/obc-peer/openchain/container/ccacontainer"
 	pb "github.com/openblockchain/obc-peer/protos"
 )
 
@@ -118,6 +118,8 @@ func GetChaincodePackageBytes(spec *pb.ChaincodeSpec) ([]byte, error) {
 	switch spec.Type {
 	case pb.ChaincodeSpec_GOLANG:
 		err = golangcontainer.WritePackage(spec, tw)
+	case pb.ChaincodeSpec_CCA:
+		err = ccacontainer.WritePackage(spec, tw)
 	default:
 		err = fmt.Errorf("Unsupported chaincode type: %s", spec.Type)
 	}

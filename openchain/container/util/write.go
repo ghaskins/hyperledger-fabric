@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"bufio"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -88,3 +90,47 @@ func WriteGopathSrc(tw *tar.Writer, excludeDir string) error {
 	return nil
 }
 
+func WriteFileToPackage(fqpath string, filename string, tw *tar.Writer) error {
+	fd, err := os.Open(fqpath)
+	if err != nil {
+		return fmt.Errorf("%s: %s", fqpath, err)
+	}
+	defer fd.Close()
+
+	info, err := os.Stat(fqpath)
+	if err != nil {
+		return fmt.Errorf("%s: %s", fqpath, err)
+	}
+
+	is := bufio.NewReader(fd)
+
+	header, err := tar.FileInfoHeader(info, fqpath)
+	if err != nil {
+		return fmt.Errorf("Error getting FileInfoHeader: %s", err)
+	}
+
+	//Let's take the variance out of the tar, make headers identical by using zero time
+	var zeroTime time.Time
+	header.AccessTime = zeroTime
+	header.ModTime = zeroTime
+	header.ChangeTime = zeroTime
+	header.Name = filename
+
+	tw.WriteHeader(header)
+	if _, err := io.Copy(tw, is); err != nil {
+		return fmt.Errorf("Error copying package into docker payload: %s", err)
+	}
+
+	return nil
+}
+
+// Find the instance of "bin" installed on the host's $PATH and inject it into the package
+func WriteExecutableToPackage(bin string, tw *tar.Writer) error {
+	cmd := exec.Command("which", bin)
+	path, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("Error determining %s path dynamically", bin)
+	}
+
+	return WriteFileToPackage(strings.Trim(string(path), "\n"), bin, tw)
+}
