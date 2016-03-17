@@ -2,15 +2,15 @@ package util
 
 import (
 	"archive/tar"
+	"bufio"
 	"fmt"
+	"github.com/op/go-logging"
 	"io"
 	"os"
-	"bufio"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
-	"github.com/op/go-logging"
 )
 
 var vmLogger = logging.MustGetLogger("container")
@@ -63,8 +63,8 @@ func WriteGopathSrc(tw *tar.Writer, excludeDir string) error {
 			return fmt.Errorf("Error getting file header %s: %s", newPath, err)
 		}
 		//Let's take the variance out of the tar, make headers identical everywhere by using zero time
-		var zeroTime time.Time
 		oldname := h.Name
+		var zeroTime time.Time
 		h.AccessTime = zeroTime
 		h.ModTime = zeroTime
 		h.ChangeTime = zeroTime
