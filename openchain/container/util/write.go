@@ -7,7 +7,6 @@ import (
 	"github.com/op/go-logging"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -107,15 +106,4 @@ func WriteFileToPackage(localpath string, packagepath string, tw *tar.Writer) er
 	}
 
 	return nil
-}
-
-// Find the instance of "bin" installed on the host's $PATH and inject it into the package
-func WriteExecutableToPackage(name string, tw *tar.Writer) error {
-	cmd := exec.Command("which", name)
-	path, err := cmd.Output()
-	if err != nil {
-		return fmt.Errorf("Error determining %s path dynamically", name)
-	}
-
-	return WriteFileToPackage(strings.Trim(string(path), "\n"), "bin/" + name, tw)
 }

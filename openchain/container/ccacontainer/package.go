@@ -8,7 +8,25 @@ import (
 	"github.com/spf13/viper"
 	"strings"
 	"time"
+	"os/exec"
 )
+
+// Find the instance of "name" installed on the host's $PATH and inject it into the package
+// This is a bit naive in that it assumes that the file returned from "which" is all that is
+// required to run the binary in a different environment.  If the binary happened to have
+// dependencies (such as to .so libraries or /etc/ files, etc) this probably wouldn't work
+// as expected.  However, our intended use cases involves binaries generated in golang and
+// clojure, both of which have a tendency to create stand-alone binaries.  Therefore, this
+// is still helpful despite being a bit dumb.
+func writeExecutableToPackage(name string, tw *tar.Writer) error {
+	cmd := exec.Command("which", name)
+	path, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("Error determining %s path dynamically", name)
+	}
+
+	return cutil.WriteFileToPackage(strings.Trim(string(path), "\n"), "bin/" + name, tw)
+}
 
 func WritePackage(spec *pb.ChaincodeSpec, tw *tar.Writer) error {
 
@@ -48,13 +66,13 @@ func WritePackage(spec *pb.ChaincodeSpec, tw *tar.Writer) error {
 		return err
 	}
 
-	err = cutil.WriteExecutableToPackage("protoc-gen-go", tw)
+	err = writeExecutableToPackage("protoc-gen-go", tw)
 	if err != nil {
 		return err
 	}
 
 	if copyobcc {
-		err := cutil.WriteExecutableToPackage("obcc", tw)
+		err := writeExecutableToPackage("obcc", tw)
 		if err != nil {
 			return err
 		}
