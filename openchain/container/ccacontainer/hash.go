@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/openblockchain/obc-peer/openchain/util"
 	cutil "github.com/openblockchain/obc-peer/openchain/container/util"
+	"github.com/openblockchain/obc-peer/openchain/util"
 	pb "github.com/openblockchain/obc-peer/protos"
 )
 

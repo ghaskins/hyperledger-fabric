@@ -3,11 +3,11 @@ package ccacontainer
 import (
 	"archive/tar"
 	"fmt"
+	cutil "github.com/openblockchain/obc-peer/openchain/container/util"
+	pb "github.com/openblockchain/obc-peer/protos"
 	"github.com/spf13/viper"
 	"strings"
 	"time"
-	cutil "github.com/openblockchain/obc-peer/openchain/container/util"
-	pb "github.com/openblockchain/obc-peer/protos"
 )
 
 func WritePackage(spec *pb.ChaincodeSpec, tw *tar.Writer) error {
@@ -44,7 +44,7 @@ func WritePackage(spec *pb.ChaincodeSpec, tw *tar.Writer) error {
 	var zeroTime time.Time
 	tw.WriteHeader(&tar.Header{Name: "Dockerfile", Size: dockerFileSize, ModTime: zeroTime, AccessTime: zeroTime, ChangeTime: zeroTime})
 	tw.Write([]byte(dockerFileContents))
-	
+
 	err = cutil.WriteFileToPackage(path, "package.cca", tw)
 	if err != nil {
 		return err
