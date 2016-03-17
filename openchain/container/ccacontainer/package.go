@@ -22,16 +22,14 @@ func WritePackage(spec *pb.ChaincodeSpec, tw *tar.Writer) error {
 		return fmt.Errorf("Error generating hashcode: %s", err)
 	}
 
-	copyobcc := viper.GetBool("chaincode.obcc.copyhost")
+	copyobcc := viper.GetBool("chaincode.cca.obcc.copyhost")
 
 	buf := make([]string, 0)
 
 	//let the executable's name be chaincode ID's name
-	buf = append(buf, viper.GetString("chaincode.Dockerfile"))
-	buf = append(buf, "COPY protoc-gen-go /usr/local/bin")
-	if copyobcc {
-		buf = append(buf, "COPY obcc /usr/local/bin")
-	} else {
+	buf = append(buf, viper.GetString("chaincode.cca.Dockerfile"))
+	buf = append(buf, "COPY bin/* /usr/local/bin/")
+	if !copyobcc {
 		buf = append(buf, "RUN apt-get install --yes obcc")
 	}
 	buf = append(buf, "COPY package.cca /tmp/package.cca")
