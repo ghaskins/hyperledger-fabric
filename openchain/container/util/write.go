@@ -78,13 +78,16 @@ func WriteFileToPackage(localpath string, packagepath string, tw *tar.Writer) er
 	}
 	defer fd.Close()
 
+	is := bufio.NewReader(fd)
+	return WriteStreamToPackage(is, localpath, packagepath, tw)
+
+}
+
+func WriteStreamToPackage(is io.Reader, localpath string, packagepath string, tw *tar.Writer) error {
 	info, err := os.Stat(localpath)
 	if err != nil {
 		return fmt.Errorf("%s: %s", localpath, err)
 	}
-
-	is := bufio.NewReader(fd)
-
 	header, err := tar.FileInfoHeader(info, localpath)
 	if err != nil {
 		return fmt.Errorf("Error getting FileInfoHeader: %s", err)

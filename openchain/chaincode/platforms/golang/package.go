@@ -1,4 +1,4 @@
-package golangcontainer
+package golang
 
 import (
 	"archive/tar"
@@ -55,21 +55,5 @@ func writeChaincodePackage(spec *pb.ChaincodeSpec, tw *tar.Writer) error {
 	if err != nil {
 		return fmt.Errorf("Error writing Chaincode package contents: %s", err)
 	}
-	return nil
-}
-
-func WritePackage(spec *pb.ChaincodeSpec, tw *tar.Writer) error {
-
-	var err error
-	spec.ChaincodeID.Name, err = generateHashcode(spec, tw)
-	if err != nil {
-		return err
-	}
-
-	err = writeChaincodePackage(spec, tw)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
