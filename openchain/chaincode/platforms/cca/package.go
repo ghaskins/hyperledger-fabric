@@ -1,18 +1,18 @@
 package cca
 
 import (
-	"strings"
-	"io/ioutil"
-	"io"
-	"os"
-	"fmt"
-	"net/http"
 	"archive/tar"
+	"fmt"
 	cutil "github.com/openblockchain/obc-peer/openchain/container/util"
 	pb "github.com/openblockchain/obc-peer/protos"
 	"github.com/spf13/viper"
-	"time"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"os"
 	"os/exec"
+	"strings"
+	"time"
 )
 
 // Find the instance of "name" installed on the host's $PATH and inject it into the package
@@ -29,7 +29,7 @@ func writeExecutableToPackage(name string, tw *tar.Writer) error {
 		return fmt.Errorf("Error determining %s path dynamically", name)
 	}
 
-	return cutil.WriteFileToPackage(strings.Trim(string(path), "\n"), "bin/" + name, tw)
+	return cutil.WriteFileToPackage(strings.Trim(string(path), "\n"), "bin/"+name, tw)
 }
 
 func download(path string) (string, error) {
