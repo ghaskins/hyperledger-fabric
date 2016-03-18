@@ -1,11 +1,10 @@
-package ccacontainer
+package cca
 
 import (
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 
-	cutil "github.com/openblockchain/obc-peer/openchain/container/util"
 	"github.com/openblockchain/obc-peer/openchain/util"
 	pb "github.com/openblockchain/obc-peer/protos"
 )
@@ -23,7 +22,7 @@ func generateHashcode(spec *pb.ChaincodeSpec, path string) (string, error) {
 		return "", fmt.Errorf("Cannot generate hashcode from empty ctor")
 	}
 
-	hash := cutil.GenerateHashFromSignature(spec.ChaincodeID.Path, ctor.Function, ctor.Args)
+	hash := util.GenerateHashFromSignature(spec.ChaincodeID.Path, ctor.Function, ctor.Args)
 
 	buf, err := ioutil.ReadFile(path)
 	if err != nil {

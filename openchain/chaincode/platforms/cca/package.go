@@ -1,12 +1,16 @@
-package ccacontainer
+package cca
 
 import (
-	"archive/tar"
+	"strings"
+	"io/ioutil"
+	"io"
+	"os"
 	"fmt"
+	"net/http"
+	"archive/tar"
 	cutil "github.com/openblockchain/obc-peer/openchain/container/util"
 	pb "github.com/openblockchain/obc-peer/protos"
 	"github.com/spf13/viper"
-	"strings"
 	"time"
 	"os/exec"
 )
@@ -28,9 +32,39 @@ func writeExecutableToPackage(name string, tw *tar.Writer) error {
 	return cutil.WriteFileToPackage(strings.Trim(string(path), "\n"), "bin/" + name, tw)
 }
 
-func WritePackage(spec *pb.ChaincodeSpec, tw *tar.Writer) error {
+func download(path string) (string, error) {
+	if strings.HasPrefix(path, "http://") {
+		// The file is remote, so we need to download it to a temporary location first
 
-	path, err := cutil.Download(spec.ChaincodeID.Path)
+		var tmp *os.File
+		var err error
+		tmp, err = ioutil.TempFile("", "cca")
+		if err != nil {
+			return "", fmt.Errorf("Error creating temporary file: %s", err)
+		}
+		defer os.Remove(tmp.Name())
+		defer tmp.Close()
+
+		resp, err := http.Get(path)
+		if err != nil {
+			return "", fmt.Errorf("Error with HTTP GET: %s", err)
+		}
+		defer resp.Body.Close()
+
+		_, err = io.Copy(tmp, resp.Body)
+		if err != nil {
+			return "", fmt.Errorf("Error downloading bytes: %s", err)
+		}
+
+		return tmp.Name(), nil
+	} else {
+		return path, nil
+	}
+}
+
+func (self *Platform) WritePackage(spec *pb.ChaincodeSpec, tw *tar.Writer) error {
+
+	path, err := download(spec.ChaincodeID.Path)
 	if err != nil {
 		return err
 	}
