@@ -1,5 +1,4 @@
 from openblockchain/baseimage:latest
-RUN apt-get update && apt-get install -y vim
 # Copy GOPATH src and install Peer
 RUN mkdir -p /var/openchain/db
 WORKDIR $GOPATH/src/github.com/openblockchain/obc-peer/
