@@ -17,6 +17,7 @@ go:
 env:
 
  - GO15VENDOREXPERIMENT=1
+ - BASEIMAGE_RELEASE=0.0.9
 
 before_install:
 
@@ -45,6 +46,7 @@ install:
  - sudo apt-get update && sudo apt-get install -y libsnappy-dev zlib1g-dev libbz2-dev
  - export CGO_CFLAGS="-I/opt/rocksdb/include"
  - export CGO_LDFLAGS="-L/opt/rocksdb -lrocksdb -lstdc++ -lm -lz -lbz2 -lsnappy"
+ - scripts/provision/docker.sh $BASEIMAGE_RELEASE
 
 before_script:
 
