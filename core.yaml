@@ -284,6 +284,20 @@ chaincode:
             COPY src $GOPATH/src
             WORKDIR $GOPATH
 
+    cca:
+
+        # This is the basis for the CCA Dockerfile.  Additional commands will
+        # be appended depedendent upon the chaincode specification.
+        Dockerfile:  |
+            FROM openblockchain/baseimage
+
+        # OBC-compiler settings
+        obcc:
+            # Copy the host's obcc compiler into the container?   Production will probably
+            # bake the compiler into the image.  Development may be more convenient to load
+            # the latest copy from the development environment.
+            copyhost: true
+
     # timeout in millisecs for starting up a container and waiting for Register
     # to come through. 1sec should be plenty for chaincode unit tests
     startuptimeout: 1000
