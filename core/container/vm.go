@@ -26,7 +26,6 @@ import (
 	"fmt"
 	"io"
 	"time"
-
 	"golang.org/x/net/context"
 
 	"github.com/spf13/viper"
@@ -206,6 +205,7 @@ func (vm *VM) getPackageBytes(writerFunc func(*tar.Writer) error) (io.Reader, er
 	}
 	return inputbuf, nil
 }
+
 
 func (vm *VM) writePeerPackage(tw *tar.Writer) error {
 	startTime := time.Now()
