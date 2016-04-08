@@ -1,4 +1,4 @@
-NAME="obc/baseimage"
+NAME="hyperledger/baseimage"
 VAGRANTIMAGE=packer_virtualbox-iso_virtualbox.box
 
 # strips off the post-processors that try to upload artifacts to the cloud
