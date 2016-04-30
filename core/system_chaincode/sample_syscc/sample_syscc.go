@@ -22,10 +22,15 @@ package sample_syscc
 import (
 	"errors"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
+	"github.com/hyperledger/fabric/core/system_chaincode/api"
 )
 
 // SampleSysCC example simple Chaincode implementation
 type SampleSysCC struct {
+}
+
+func Register() {
+	api.RegisterSysCC("github.com/hyperledger/fabric/core/system_chaincode/sample_syscc", &SampleSysCC{})
 }
 
 func (t *SampleSysCC) Init(stub *shim.ChaincodeStub, function string, args []string) ([]byte, error) {
