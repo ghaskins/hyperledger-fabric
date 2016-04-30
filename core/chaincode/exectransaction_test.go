@@ -30,7 +30,7 @@ import (
 
 	"github.com/hyperledger/fabric/core/container"
 	"github.com/hyperledger/fabric/core/ledger"
-	"github.com/hyperledger/fabric/core/system_chaincode"
+	_ "github.com/hyperledger/fabric/core/system_chaincode"
 	"github.com/hyperledger/fabric/core/util"
 	pb "github.com/hyperledger/fabric/protos"
 	"github.com/spf13/viper"
@@ -871,8 +871,6 @@ func TestExecuteDeploySysChaincode(t *testing.T) {
 	go grpcServer.Serve(lis)
 
 	var ctxt = context.Background()
-
-	system_chaincode.RegisterSysCCs()
 
 	url := "github.com/hyperledger/fabric/core/system_chaincode/sample_syscc"
 

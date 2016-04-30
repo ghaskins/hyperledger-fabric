@@ -54,7 +54,7 @@ import (
 	"github.com/hyperledger/fabric/core/ledger/genesis"
 	"github.com/hyperledger/fabric/core/peer"
 	"github.com/hyperledger/fabric/core/rest"
-	"github.com/hyperledger/fabric/core/system_chaincode"
+	_ "github.com/hyperledger/fabric/core/system_chaincode"
 	"github.com/hyperledger/fabric/events/producer"
 	pb "github.com/hyperledger/fabric/protos"
 	"net/http"
@@ -389,9 +389,6 @@ func serve(args []string) error {
 		return err
 	}
 
-	//register all system chaincodes. This just registers chaincodes, they must be 
-	//still be deployed and launched
-	system_chaincode.RegisterSysCCs()
 	peerEndpoint, err := peer.GetPeerEndpoint()
 	if err != nil {
 		err = fmt.Errorf("Failed to get Peer Endpoint: %s", err)
