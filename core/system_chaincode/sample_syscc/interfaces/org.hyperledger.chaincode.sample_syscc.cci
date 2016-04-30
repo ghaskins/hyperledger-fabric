@@ -1,0 +1,17 @@
+
+message KeyValue {
+        string key = 1;
+        string value = 2;
+}
+
+message Item {
+        string data = 1;
+}
+
+transactions {
+        void PutVal(KeyValue) = 1;
+}
+
+queries {
+        Item GetVal(Item) = 1;
+}

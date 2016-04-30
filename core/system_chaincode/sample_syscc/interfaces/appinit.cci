@@ -1,0 +1,5 @@
+
+message Init {
+        string key = 1;
+        string value = 2;
+}

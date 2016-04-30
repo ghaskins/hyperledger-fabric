@@ -1,0 +1,18 @@
+
+# ----------------------------------
+# chaincode sample_syscc
+# ----------------------------------
+#
+# Copyright (C) 2016 - Hyperledger
+# All rights reserved
+#
+
+Schema:  1
+Name:    org.hyperledger.chaincode.sample_syscc
+Version: 0.1-SNAPSHOT
+
+Platform:
+        Name: org.hyperledger.chaincode.system
+        Version: 1
+
+Provides: [self] # 'self' is a keyword that means there should be $name.cci (e.g. org.hyperledger.chaincode.sample_syscc.cci)
