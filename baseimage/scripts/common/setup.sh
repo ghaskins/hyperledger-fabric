@@ -18,23 +18,38 @@ apt-get install --yes git
 
 # Set Go environment variables needed by other scripts
 export GOPATH="/opt/gopath"
-export GOROOT="/opt/go"
-PATH=$GOROOT/bin:$GOPATH/bin:$PATH
 
 #install golang
 #apt-get install --yes golang
 mkdir -p $GOPATH
+MACHINE=`uname -m`
+if [ x$MACHINE = xs390x ]
+then
+   apt-get install --yes golang
+   export GOROOT="/usr/lib/go-1.6"
+   PATH=$GOROOT/bin:$GOPATH/bin:$PATH
+elif [ x$MACHINE = xppc64 ]
+then
+   echo "TODO: Add PPC support"
+    exit
+elif [ x$MACHINE = xx86_64 ]
+then
+   export GOROOT="/opt/go"
+   
+   #ARCH=`uname -m | sed 's|i686|386|' | sed 's|x86_64|amd64|'`
+   ARCH=amd64
+   GO_VER=1.6
+   
+   cd /tmp
+   wget --quiet --no-check-certificate https://storage.googleapis.com/golang/go$GO_VER.linux-${ARCH}.tar.gz
+   tar -xvf go$GO_VER.linux-${ARCH}.tar.gz
+   mv go $GOROOT
+   chmod 775 $GOROOT
+   rm go$GO_VER.linux-${ARCH}.tar.gz
+fi
 
-#ARCH=`uname -m | sed 's|i686|386|' | sed 's|x86_64|amd64|'`
-ARCH=amd64
-GO_VER=1.6
+PATH=$GOROOT/bin:$GOPATH/bin:$PATH
 
-cd /tmp
-wget --quiet --no-check-certificate https://storage.googleapis.com/golang/go$GO_VER.linux-${ARCH}.tar.gz
-tar -xvf go$GO_VER.linux-${ARCH}.tar.gz
-mv go $GOROOT
-chmod 775 $GOROOT
-rm go$GO_VER.linux-${ARCH}.tar.gz
 cat <<EOF >/etc/profile.d/goroot.sh
 export GOROOT=$GOROOT
 export GOPATH=$GOPATH
@@ -58,10 +73,15 @@ TEMP_DIR=/tmp
 SRC_PATH=$TEMP_DIR/$NODE_PACKAGE
 
 cd $TEMP_DIR
-# First remove any prior packages downloaded in case of failure
-rm -f node*.tar.gz
-wget --quiet https://nodejs.org/dist/v$NODE_VER/$NODE_PACKAGE
-cd /usr/local && sudo tar --strip-components 1 -xzf $SRC_PATH
+if [ x$MACHINE = xs390x ]
+then
+    apt-get install --yes nodejs
+else
+   # First remove any prior packages downloaded in case of failure
+   rm -f node*.tar.gz
+   wget --quiet https://nodejs.org/dist/v$NODE_VER/$NODE_PACKAGE
+   cd /usr/local && sudo tar --strip-components 1 -xzf $SRC_PATH
+fi
 
 # Install GRPC
 
@@ -90,9 +110,14 @@ apt-get install -y build-essential libtool
 #./configure
 ./configure --prefix=/usr
 
-make
-make check
-make install
+if [ x$MACHINE = xs390x ]
+then
+   echo FIXME: protobufs wont compile on 390, missing atomic call
+else
+   make
+   make check
+   make install
+fi
 export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 cd ~/
 
@@ -102,6 +127,13 @@ cd /tmp
 git clone https://github.com/facebook/rocksdb.git
 cd rocksdb
 git checkout tags/v4.1
+if [ x$MACHINE = xs390x ]
+then
+    echo There were some bugs in 4.1 for x/p, dev stream has the fix, living dangereously, fixing in place
+    sed -i -e "s/-march=native/-march=zEC12/" build_tools/build_detect_platform
+    sed -i -e "s/-momit-leaf-frame-pointer/-DDUMBDUMMY/" Makefile
+fi
+
 PORTABLE=1 make shared_lib
 INSTALL_PATH=/usr/local make install-shared
 ldconfig
