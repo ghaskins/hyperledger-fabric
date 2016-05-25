@@ -3,7 +3,7 @@
 # begin to access
 
 NAME=hyperledger/fabric-baseimage
-VERSION=0.0.9
+VERSION=0.0.10
 ARCH=$(shell uname -m)
 DOCKER_TAG ?= $(ARCH)-$(VERSION)
 VAGRANTIMAGE=packer_virtualbox-iso_virtualbox.box
