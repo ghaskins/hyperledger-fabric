@@ -106,6 +106,9 @@ func GetChaincodePackageBytes(spec *pb.ChaincodeSpec) ([]byte, error) {
 		return nil, err
 	}
 
+	// Dump the .tar.gz file for Docker. Useful for testing.
+	//ioutil.WriteFile("/tmp/chaincode_deployment.tar", inputbuf.Bytes(), 0644)
+
 	chaincodePkgBytes := inputbuf.Bytes()
 
 	return chaincodePkgBytes, nil
