@@ -296,6 +296,7 @@ chaincode:
     # minimize the size of the deployment transaction.
     filetypes:
       - .h
+      - .c
       - .go
       - .yaml
       - .json
