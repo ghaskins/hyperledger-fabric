@@ -46,7 +46,7 @@ K := $(foreach exec,$(EXECUTABLES),\
 	$(if $(shell which $(exec)),some string,$(error "No $(exec) in PATH: Check dependencies")))
 
 # SUBDIRS are components that have their own Makefiles that we can invoke
-SUBDIRS = gotools sdk/node
+SUBDIRS = gotools sdk/node bddtests
 SUBDIRS:=$(strip $(SUBDIRS))
 
 # Make our baseimage depend on any changes to images/base or scripts/provision
@@ -78,15 +78,9 @@ unit-test: peer-image gotools
 .PHONY: images
 images: $(patsubst %,build/image/%/.dummy, $(IMAGES))
 
-build/behave/.grpc-dummy:
-	sudo pip install -q 'grpcio==0.13.1'
-	mkdir -p build/behave
-	touch build/behave/.grpc-dummy
+behave-deps: images peer
+	cd bddtests && $(MAKE) deps
 
-behave-grpc: build/behave/.grpc-dummy
-
-
-behave-deps: images peer behave-grpc
 behave: behave-deps
 	@echo "Running behave tests"
 	@cd bddtests; behave $(BEHAVE_OPTS)
