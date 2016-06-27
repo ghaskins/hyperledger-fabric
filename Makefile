@@ -53,7 +53,12 @@ SUBDIRS:=$(strip $(SUBDIRS))
 BASEIMAGE_RELEASE = $(shell cat ./images/base/release)
 BASEIMAGE_DEPS    = $(shell git ls-files images/base scripts/provision)
 
+# Build our list of system chaincode to include
+SYSCC_INCLUDE = $(shell cat .syscc-includes)
+
 PROJECT_FILES = $(shell git ls-files)
+PROJECT_FILES += build/syscc/imports.go
+
 IMAGES = base src ccenv peer membersrvc
 
 all: peer membersrvc checks
@@ -65,8 +70,15 @@ $(SUBDIRS):
 	cd $@ && $(MAKE)
 
 .PHONY: peer
-peer: build/bin/peer
+peer: build/bin/peer build/syscc/imports.go
 peer-image: build/image/peer/.dummy
+
+.syscc-includes:
+	touch $@
+
+build/syscc/imports.go: .syscc-includes Makefile scripts/goSysccImports.sh
+	mkdir -p $(@D)
+	@./scripts/goSysccImports.sh $@ "$(SYSCC_INCLUDE)"
 
 .PHONY: membersrvc
 membersrvc: build/bin/membersrvc
@@ -151,6 +163,7 @@ build/image/src/.dummy: build/image/base/.dummy $(PROJECT_FILES)
 	@echo "Building docker src-image"
 	@mkdir -p $(@D)
 	@cat images/src/Dockerfile.in > $(@D)/Dockerfile
+	@cp build/syscc/imports.go $(@D)/syscc-imports.go
 	@git ls-files | tar -jcT - > $(@D)/gopath.tar.bz2
 	docker build -t $(PROJECT_NAME)-src:latest $(@D)
 	@touch $@

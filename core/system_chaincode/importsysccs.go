@@ -18,6 +18,7 @@ package system_chaincode
 
 import (
 	"github.com/hyperledger/fabric/core/system_chaincode/api"
+	"github.com/hyperledger/fabric/build/syscc"
 	//import system chain codes here
 )
 
