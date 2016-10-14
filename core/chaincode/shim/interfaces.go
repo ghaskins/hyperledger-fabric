@@ -51,6 +51,9 @@ type ChaincodeStubInterface interface {
 	// as parameters
 	GetFunctionAndParameters() (string, []string)
 
+	// Get the transaction ID
+	GetTxID() string
+
 	// InvokeChaincode locally calls the specified chaincode `Invoke` using the
 	// same transaction context; that is, chaincode calling chaincode doesn't
 	// create a new transaction message.
