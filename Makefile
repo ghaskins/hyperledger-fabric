@@ -38,10 +38,10 @@
 
 PROJECT_NAME   = hyperledger/fabric
 BASE_VERSION   = 0.7.0
-IS_RELEASE     = false # commit as 'true' only once for a given $(BASE_VERSION)
+IS_RELEASE     = false
 
 ifneq ($(IS_RELEASE),true)
-EXTRA_VERSION ?= SNAPSHOT-$(shell git rev-parse --short HEAD)
+EXTRA_VERSION ?= snapshot-$(shell git rev-parse --short HEAD)
 PROJECT_VERSION=$(BASE_VERSION)-$(EXTRA_VERSION)
 else
 PROJECT_VERSION=$(BASE_VERSION)
