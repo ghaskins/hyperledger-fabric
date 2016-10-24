@@ -1,0 +1,7 @@
+FROM hyperledger/fabric-baseimage:_BASE_TAG_
+ENV MEMBERSRVC_CFG_PATH /etc/hyperledger/fabric
+RUN mkdir -p /var/hyperledger/db $MEMBERSRVC_CFG_PATH
+COPY bin/* /usr/local/bin
+COPY config/*.yaml $MEMBERSRVC_CFG_PATH
+WORKDIR $MEMBERSRVC_CFG_PATH
+CMD membersrvc
