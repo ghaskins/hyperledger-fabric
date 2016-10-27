@@ -20,7 +20,7 @@ rest:
     # Enable/disable setting for the REST service. It is recommended to disable
     # REST service on validators in production deployment and use non-validating
     # nodes to host REST service
-    enabled: true
+    enabled: false
 
     # The address that the REST service will listen on for incoming requests.
     address: 0.0.0.0:7050
@@ -111,9 +111,13 @@ peer:
             snapshot:
                 # Channel size for readonly syncStateSnapshot messages channel
                 # for receiving state deltas for snapshot from oppositie Peer Endpoints.
-                # NOTE: currently messages are not stored and forwarded, but
-                # rather lost if the channel write blocks.
+                # NOTE: when the channel is exhausted, the writes block for up to the
+                # writeTimeout specified below
                 channelSize: 50
+                # Write timeout for the syncStateSnapshot messages
+                # When the channel above is exhausted, messages block before being
+                # discarded for this amount of time
+                writeTimeout: 60s
             deltas:
                 # Channel size for readonly syncStateDeltas messages channel for
                 # receiving state deltas for a syncBlockRange from oppositie
@@ -148,6 +152,20 @@ peer:
             # if 0, if buffer full, will block and guarantee the event will be sent out
             # if > 0, if buffer full, blocks till timeout
             timeout: 10
+
+    # ----!!!!IMPORTANT!!!-!!!IMPORTANT!!!-!!!IMPORTANT!!!!----
+    # THIS HAS TO BE DONE IN THE CONTEXT OF BOOTSTRAP. TILL THAT
+    # IS DESIGNED AND FINALIZED, THE FOLLOWING COMMITTER/ORDERER
+    # DEFINITIONS HAVE TO SERVE AS THE MEANS TO DRIVE A SIMPLE
+    # SKELETON.
+    #
+    # All "chaincode" commands from CLI (except "query") will
+    # send response from the endorser to the Committer defined below.
+    committer:
+        enabled: true
+        ledger:
+            # orderer to talk to
+            orderer: 127.0.0.1:5005
 
     # TLS Settings for p2p communications
     tls:
@@ -209,7 +227,11 @@ peer:
 
     # Path on the file system where peer will store data
     fileSystemPath: /var/hyperledger/production
-
+    # rocksdb configurations
+    db:
+        maxLogFileSize: 10485760
+        keepLogFileNum: 10
+        logLevel: "warn"
 
     profile:
         enabled:     false
@@ -278,10 +300,9 @@ chaincode:
         # This is the basis for the Golang Dockerfile.  Additional commands will
         # be appended depedendent upon the chaincode specification.
         Dockerfile:  |
-            from hyperledger/fabric-baseimage
-            #from utxo:0.1.0
-            COPY src $GOPATH/src
-            WORKDIR $GOPATH
+          FROM hyperledger/fabric-ccenv:$(ARCH)-$(PROJECT_VERSION)
+          COPY src $GOPATH/src
+          WORKDIR $GOPATH
 
     car:
 
@@ -322,6 +343,12 @@ chaincode:
     # A value <= 0 turns keepalive off
     keepalive: 0
 
+    # system chaincodes whitelist. To add system chaincode "myscc" to the  
+    # whitelist, add "myscc: enable" to the list
+    system:
+        lccc: enable
+        escc: enable
+        vscc: enable
 ###############################################################################
 #
 ###############################################################################
@@ -412,7 +439,7 @@ security:
       enabled: false
 
     # TCerts pool configuration.  Multi-thread pool can also be configured
-    # by multichannel option switching concurrency in communication with TCA. 
+    # by multichannel option switching concurrency in communication with TCA.
     multithreading:
       enabled: false
       multichannel: false

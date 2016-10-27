@@ -18,8 +18,7 @@ limitations under the License.
 package shim
 
 import (
-	gp "google/protobuf"
-
+	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/hyperledger/fabric/core/chaincode/shim/crypto/attr"
 )
 
@@ -28,15 +27,15 @@ import (
 type Chaincode interface {
 	// Init is called during Deploy transaction after the container has been
 	// established, allowing the chaincode to initialize its internal data
-	Init(stub ChaincodeStubInterface, function string, args []string) ([]byte, error)
+	Init(stub ChaincodeStubInterface) ([]byte, error)
 
 	// Invoke is called for every Invoke transactions. The chaincode may change
 	// its state variables
-	Invoke(stub ChaincodeStubInterface, function string, args []string) ([]byte, error)
+	Invoke(stub ChaincodeStubInterface) ([]byte, error)
 
 	// Query is called for Query transactions. The chaincode may only read
 	// (but not modify) its state variables and return the result
-	Query(stub ChaincodeStubInterface, function string, args []string) ([]byte, error)
+	Query(stub ChaincodeStubInterface) ([]byte, error)
 }
 
 // ChaincodeStubInterface is used by deployable chaincode apps to access and modify their ledgers
@@ -46,6 +45,13 @@ type ChaincodeStubInterface interface {
 
 	// Get the arguments to the stub call as a string array
 	GetStringArgs() []string
+
+	// Get the function which is the first argument and the rest of the arguments
+	// as parameters
+	GetFunctionAndParameters() (string, []string)
+
+	// Get the transaction ID
+	GetTxID() string
 
 	// InvokeChaincode locally calls the specified chaincode `Invoke` using the
 	// same transaction context; that is, chaincode calling chaincode doesn't
@@ -152,7 +158,7 @@ type ChaincodeStubInterface interface {
 	// GetTxTimestamp returns transaction created timestamp, which is currently
 	// taken from the peer receiving the transaction. Note that this timestamp
 	// may not be the same with the other peers' time.
-	GetTxTimestamp() (*gp.Timestamp, error)
+	GetTxTimestamp() (*timestamp.Timestamp, error)
 
 	// SetEvent saves the event to be sent when a transaction is made part of a block
 	SetEvent(name string, payload []byte) error

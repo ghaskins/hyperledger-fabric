@@ -6,6 +6,7 @@
 #  @chaincodeImagesUpToDate use this if all scenarios chaincode images are up to date, and do NOT require building.  BE SURE!!!
 
 #@chaincodeImagesUpToDate
+@preV1
 Feature: Network of Peers
     As a Fabric developer
     I want to run a network of peers
@@ -349,6 +350,7 @@ Feature: Network of Peers
 
 #    @doNotDecompose
 #    @wip
+  @devops
 	Scenario: chaincode map single peer content generated ID
 	    Given we compose "docker-compose-1.yml"
 	    When requesting "/chain" from "vp0"
@@ -504,9 +506,11 @@ Feature: Network of Peers
         |   docker-compose-4-consensus-batch.yml   |      60      |
 
 
+    #@doNotDecompose
+    #@wip
     @issue_680
+    @fab380
     Scenario Outline: chaincode example02 with 4 peers and 1 membersrvc, issue #680 (State transfer)
-
         Given we compose "<ComposeFile>"
         And I register with CA supplying username "binhn" and secret "7avZQLwcUe9q" on peers:
             | vp0  |
@@ -578,8 +582,9 @@ Feature: Network of Peers
 
 
     Examples: Consensus Options
-        |          ComposeFile                       |   WaitTime   |
-        |   docker-compose-4-consensus-batch.yml     |      60      |
+        |          ComposeFile                                                                            |   WaitTime   |
+        |   docker-compose-4-consensus-batch.yml                                                          |      60      |
+        |   docker-compose-4-consensus-batch.yml docker-compose-4-consensus-batch-nosnapshotbuffer.yml    |      60      |
 
 
 #    @doNotDecompose
@@ -628,16 +633,19 @@ Feature: Network of Peers
         |   docker-compose-4-consensus-noops.yml   |      60      |
 
 
-    Scenario: basic startup of 3 validating peers
-        Given we compose "docker-compose-3.yml"
-        When requesting "/chain" from "vp0"
-        Then I should get a JSON response with "height" = "1"
+#   @doNotDecompose
+#    @wip
+	Scenario: basic startup of 3 validating peers
+	    Given we compose "docker-compose-3.yml"
+	    When requesting "/chain" from "vp0"
+	    Then I should get a JSON response with "height" = "1"
 
-    @TLS
-    Scenario: basic startup of 2 validating peers using TLS
-        Given we compose "docker-compose-2-tls-basic.yml"
-        When requesting "/chain" from "vp0"
-        Then I should get a JSON response with "height" = "1"
+ 	@TLS
+#	@doNotDecompose
+	Scenario: basic startup of 2 validating peers using TLS
+	    Given we compose "docker-compose-2-tls-basic.yml"
+	    When requesting "/chain" from "vp0"
+	    Then I should get a JSON response with "height" = "1"
 
 
     Scenario Outline: 4 peers and 1 membersrvc, consensus still works if one backup replica fails
@@ -892,8 +900,7 @@ Feature: Network of Peers
 
 
     @issue_1091
-    @doNotDecompose
-    Scenario Outline: chaincode example02 with 4 peers and 1 membersrvc, issue #1091 (out of date peer)
+    Scenario Outline: chaincode example02 with 4 peers and 1 membersrvc, issue #1019 (out of date peer)
 
         Given we compose "<ComposeFile>"
         And I register with CA supplying username "binhn" and secret "7avZQLwcUe9q" on peers:
@@ -936,24 +943,22 @@ Feature: Network of Peers
         # Now start vp3 again
         Given I start peers:
             | vp3  |
+        And I wait "15" seconds
 
-        # Invoke some more txs, this will trigger a state transfer, but it cannot complete
+        # Invoke 8 more txs, this will trigger a state transfer, but it cannot complete
         When I invoke chaincode "example2" function name "invoke" on "vp0" "8" times
             |arg1|arg2|arg3|
             | a  | b  | 10 |
         Then I should have received a transactionID
         Then I wait up to "<WaitTime>" seconds for transaction to be committed to peers:
             | vp0  | vp1 | vp2 |
+        # wait a bit to make sure the state is invalid on vp3
+        Then I wait "20" seconds
         When I query chaincode "example2" function name "query" with value "a" on peers:
             | vp0  | vp1 | vp2 |
-            | vp0  | vp1 | vp2 |
         Then I should get a JSON response from peers with "result.message" = "21"
-
-        # Force VP3 to attempt to sync with the rest of the peers
-        When I invoke chaincode "example2" function name "invoke" on "vp3"
-            |arg1|arg2|arg3|
-            | a  | b  | 10 |
-        And I unconditionally query chaincode "example2" function name "query" with value "a" on peers:
+            | vp0  | vp1 | vp2 |
+        When I unconditionally query chaincode "example2" function name "query" with value "a" on peers:
             | vp3  |
         Then I should get a JSON response from peers with "error.data" = "Error when querying chaincode: Error: state may be inconsistent, cannot query"
             | vp3  |
@@ -1159,15 +1164,15 @@ Scenario: chaincode example02 with 4 peers, two stopped
         |  a   |  100  |  b   |  200 |
     Then I should have received a chaincode name
     Then I wait up to "60" seconds for transaction to be committed to peers:
-        | vp0 | vp1 | vp2 | vp3 |
+        | vp0  | vp1 | vp2 |
 
     When I query chaincode "example2" function name "query" with value "a" on peers:
-        | vp0 | vp1 | vp2 | vp3 |
+        | vp0  | vp1 | vp2 | vp3 |
     Then I should get a JSON response from peers with "result.message" = "100"
-        | vp0 | vp1 | vp2 | vp3 |
+        | vp0  | vp1 | vp2 | vp3 |
 
     Given I stop peers:
-        | vp2 | vp3 |
+        | vp2 | vp3  |
 
     When I invoke chaincode "example2" function name "invoke" on "vp0"
         |arg1|arg2|arg3|
@@ -1175,27 +1180,20 @@ Scenario: chaincode example02 with 4 peers, two stopped
     Then I should have received a transactionID
 
     Given I start peers:
-        | vp3 |
-
-    # Make sure vp3 catches up first
-    Then I wait up to "60" seconds for transaction to be committed to peers:
-        | vp0 | vp1 | vp3 |
-    When I query chaincode "example2" function name "query" with value "a" on peers:
-        | vp0 | vp1 | vp3 |
-    Then I should get a JSON response from peers with "result.message" = "90"
-        | vp0 | vp1 | vp3 |
+          | vp3  |
+    And I wait "15" seconds
 
     When I invoke chaincode "example2" function name "invoke" on "vp0" "9" times
         |arg1|arg2|arg3|
         | a  | b  | 10 |
     Then I should have received a transactionID
     Then I wait up to "60" seconds for transaction to be committed to peers:
-        | vp0 | vp1 | vp3 |
+        | vp0  | vp1 | vp3 |
 
     When I query chaincode "example2" function name "query" with value "a" on peers:
-        | vp0 | vp1 | vp3 |
+        | vp0  | vp1 | vp3 |
     Then I should get a JSON response from peers with "result.message" = "0"
-        | vp0 | vp1 | vp3 |
+        | vp0  | vp1 | vp3 |
 
 @issue_1874b
 #@doNotDecompose

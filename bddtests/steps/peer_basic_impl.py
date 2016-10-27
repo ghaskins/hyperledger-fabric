@@ -22,30 +22,55 @@ import copy
 from behave import *
 from datetime import datetime, timedelta
 import base64
+import uuid
 
 import sys, requests, json
 
-import bdd_compose_util
 import bdd_test_util
-from bdd_test_util import currentTime
-from bdd_rest_util import buildUrl
-from bdd_json_util import getAttributeFromJSON
+import compose
 
+CORE_REST_PORT = 7050
 JSONRPC_VERSION = "2.0"
+
+class ContainerData:
+    def __init__(self, containerName, ipAddress, envFromInspect, composeService):
+        self.containerName = containerName
+        self.ipAddress = ipAddress
+        self.envFromInspect = envFromInspect
+        self.composeService = composeService
+
+    def getEnv(self, key):
+        envValue = None
+        for val in self.envFromInspect:
+            if val.startswith(key):
+                envValue = val[len(key):]
+                break
+        if envValue == None:
+            raise Exception("ENV key not found ({0}) for container ({1})".format(key, self.containerName))
+        return envValue
+
+def buildUrl(context, ipAddress, path):
+    schema = "http"
+    if 'TLS' in context.tags:
+        schema = "https"
+    return "{0}://{1}:{2}{3}".format(schema, ipAddress, CORE_REST_PORT, path)
+
+def currentTime():
+    return time.strftime("%H:%M:%S")
+
+def getDockerComposeFileArgsFromYamlFile(compose_yaml):
+    parts = compose_yaml.split()
+    args = []
+    for part in parts:
+        args = args + ["-f"] + [part]
+    return args
 
 @given(u'we compose "{composeYamlFile}"')
 def step_impl(context, composeYamlFile):
-    context.compose_yaml = composeYamlFile
-    fileArgsToDockerCompose = bdd_compose_util.getDockerComposeFileArgsFromYamlFile(context.compose_yaml)
-    context.compose_output, context.compose_error, context.compose_returncode = \
-        bdd_test_util.cli_call(["docker-compose"] + fileArgsToDockerCompose + ["up","--force-recreate", "-d"], expect_success=True)
-    assert context.compose_returncode == 0, "docker-compose failed to bring up {0}".format(composeYamlFile)
-
-    bdd_compose_util.parseComposeOutput(context)
-
-    timeoutSeconds = 15
-    assert bdd_compose_util.allContainersAreReadyWithinTimeout(context, timeoutSeconds), \
-        "Containers did not come up within {} seconds, aborting".format(timeoutSeconds)
+    # time.sleep(10)              # Should be replaced with a definitive interlock guaranteeing that all peers/membersrvc are ready
+    composition = compose.Composition(composeYamlFile)
+    context.compose_containers = composition.containerDataList
+    context.composition = composition
 
 @when(u'requesting "{path}" from "{containerName}"')
 def step_impl(context, path, containerName):
@@ -68,6 +93,15 @@ def step_impl(context, attribute):
         assert None, "Attribute found in response (%s)" %(attribute)
     except AssertionError:
         print("Attribute not found as was expected.")
+
+def getAttributeFromJSON(attribute, jsonObject, msg):
+    return getHierarchyAttributesFromJSON(attribute.split("."), jsonObject, msg)
+
+def getHierarchyAttributesFromJSON(attributes, jsonObject, msg):
+    if len(attributes) > 0:
+        assert attributes[0] in jsonObject, msg
+        return getHierarchyAttributesFromJSON(attributes[1:], jsonObject[attributes[0]], msg)
+    return jsonObject
 
 def formatStringToCompare(value):
     # double quotes are replaced by simple quotes because is not possible escape double quotes in the attribute parameters.
@@ -451,18 +485,6 @@ def step_impl(context, tUUID):
     assert 'transactionID' in context, "transactionID not found in context"
     assert context.transactionID == tUUID, "transactionID is not tUUID"
 
-def getContainerDataValuesFromContext(context, aliases, callback):
-    """Returns the IPAddress based upon a name part of the full container name"""
-    assert 'compose_containers' in context, "compose_containers not found in context"
-    values = []
-    containerNamePrefix = os.path.basename(os.getcwd()) + "_"
-    for namePart in aliases:
-        for containerData in context.compose_containers:
-            if containerData.containerName.startswith(containerNamePrefix + namePart):
-                values.append(callback(containerData))
-                break
-    return values
-
 @then(u'I wait up to "{seconds}" seconds for transaction to be committed to peers')
 def step_impl(context, seconds):
     assert 'transactionID' in context, "transactionID not found in context"
@@ -722,20 +744,10 @@ def step_impl(context):
 
 def compose_op(context, op):
     assert 'table' in context, "table (of peers) not found in context"
-    assert 'compose_yaml' in context, "compose_yaml not found in context"
-
-    fileArgsToDockerCompose = bdd_compose_util.getDockerComposeFileArgsFromYamlFile(context.compose_yaml)
+    assert 'composition' in context, "composition not found in context"
     services =  context.table.headings
-    # Loop through services and start/stop them, and modify the container data list if successful.
-    for service in services:
-       context.compose_output, context.compose_error, context.compose_returncode = \
-           bdd_test_util.cli_call(["docker-compose"] + fileArgsToDockerCompose + [op, service], expect_success=True)
-       assert context.compose_returncode == 0, "docker-compose failed to {0} {0}".format(op, service)
-       if op == "stop" or op == "pause":
-           context.compose_containers = [containerData for containerData in context.compose_containers if containerData.composeService != service]
-       else:
-           bdd_compose_util.parseComposeOutput(context)
-       print("After {0}ing, the container service list is = {1}".format(op, [containerData.composeService for  containerData in context.compose_containers]))
+    context.composition.issueCommand([op] + services)
+    context.compose_containers = context.composition.containerDataList
 
 def to_bytes(strlist):
     return [base64.standard_b64encode(s.encode('ascii')) for s in strlist]

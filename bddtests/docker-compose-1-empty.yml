@@ -1,4 +1,3 @@
 empty:
   image: hyperledger/fabric-src
-  # TCP Listen on a port to satisfy the container 'ready' condition
-  command: nc -k -l 50000
+  command: bash -c "sleep inf"

@@ -57,7 +57,8 @@ type AssetManagementChaincode struct {
 }
 
 // Init initialization
-func (t *AssetManagementChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+func (t *AssetManagementChaincode) Init(stub shim.ChaincodeStubInterface) ([]byte, error) {
+	_, args := stub.GetFunctionAndParameters()
 	myLogger.Info("[AssetManagementChaincode] Init")
 	if len(args) != 0 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 0")
@@ -113,7 +114,7 @@ func (t *AssetManagementChaincode) assign(stub shim.ChaincodeStubInterface, args
 
 	callerRole, err := stub.ReadCertAttribute("role")
 	if err != nil {
-		fmt.Printf("Error reading attribute [%v] \n", err)
+		fmt.Printf("Error reading attribute 'role' [%v] \n", err)
 		return nil, fmt.Errorf("Failed fetching caller role. Error was [%v]", err)
 	}
 
@@ -218,8 +219,8 @@ func (t *AssetManagementChaincode) transfer(stub shim.ChaincodeStubInterface, ar
 }
 
 // Invoke runs callback representing the invocation of a chaincode
-func (t *AssetManagementChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-
+func (t *AssetManagementChaincode) Invoke(stub shim.ChaincodeStubInterface) ([]byte, error) {
+	function, args := stub.GetFunctionAndParameters()
 	// Handle different functions
 	if function == "assign" {
 		// Assign ownership
@@ -233,9 +234,10 @@ func (t *AssetManagementChaincode) Invoke(stub shim.ChaincodeStubInterface, func
 }
 
 // Query callback representing the query of a chaincode
-func (t *AssetManagementChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+func (t *AssetManagementChaincode) Query(stub shim.ChaincodeStubInterface) ([]byte, error) {
+	function, args := stub.GetFunctionAndParameters()
 	if function != "query" {
-		return nil, errors.New("Invalid query function name. Expecting \"query\"")
+		return nil, errors.New("Invalid query function name. Expecting 'query' but found '" + function + "'")
 	}
 
 	var err error

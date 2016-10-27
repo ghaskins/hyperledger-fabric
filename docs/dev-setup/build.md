@@ -158,19 +158,41 @@ cd $GOPATH/src/github.com/hyperledger/fabric
 make peer unit-test behave
 ```
 
+### Building on Power Platform
+
+Development and build on Power (ppc64le) systems is done outside of vagrant as outlined [here](#building-outside-of-vagrant-). For ease of setting up the dev environment on Ubuntu, invoke [this script](https://github.com/hyperledger/fabric/tree/master/devenv/setupUbuntuOnPPC64le.sh) as root. This script has been validated on Ubuntu 16.04 and assumes certain things (like, development system has OS repositories in place, firewall setting etc) and in general can be improvised further.
+
+To get started on Power server installed with Ubuntu, first ensure you have properly setup your Host's [GOPATH environment variable](https://github.com/golang/go/wiki/GOPATH). Then, execute the following commands to build the fabric code:
+
+```
+mkdir -p $GOPATH/src/github.com/hyperledger
+cd $GOPATH/src/github.com/hyperledger
+git clone http://gerrit.hyperledger.org/r/fabric
+sudo ./fabric/devenv/setupUbuntuOnPPC64le.sh
+cd $GOPATH/src/github.com/hyperledger/fabric
+make dist-clean all
+```
+
 ### Building natively on OSX
 First, install Docker, as described [here](https://docs.docker.com/engine/installation/mac/).
 The database by default writes to /var/hyperledger. You can override this in the `core.yaml` configuration file, under `peer.fileSystemPath`.
 
 ```
-brew install go rocksdb snappy gnu-tar     # For RocksDB version 4.1, you can compile your own, as described earlier
+brew install go rocksdb snappy gnu-tar     
+# For RocksDB version 4.1, you need to compile your own locally
+cd /tmp
+git clone https://github.com/facebook/rocksdb.git
+cd rocksdb
+git checkout v4.1
+PORTABLE=1 make shared_lib
+INSTALL_PATH=/usr/local make install-shared
 
-# You will need the following two for every shell you want to use
+# You will need the following two lines for every shell you want to use
 eval $(docker-machine env)
 export PATH="/usr/local/opt/gnu-tar/libexec/gnubin:$PATH"
 
 cd $GOPATH/src/github.com/hyperledger/fabric
-make peer
+make all
 ```
 
 ## Configuration
@@ -183,7 +205,7 @@ There is a **core.yaml** file that contains the configuration for the peer proce
 
 ## Logging
 
-Logging utilizes the [go-logging](https://github.com/op/go-logging) library. 
+Logging utilizes the [go-logging](https://github.com/op/go-logging) library.
 
 The available log levels in order of increasing verbosity are: *CRITICAL | ERROR | WARNING | NOTICE | INFO | DEBUG*
 

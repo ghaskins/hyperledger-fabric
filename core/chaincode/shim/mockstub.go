@@ -23,8 +23,7 @@ import (
 	"errors"
 	"strings"
 
-	gp "google/protobuf"
-
+	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/hyperledger/fabric/core/chaincode/shim/crypto/attr"
 	"github.com/op/go-logging"
 )
@@ -55,8 +54,12 @@ type MockStub struct {
 	Invokables map[string]*MockStub
 
 	// stores a transaction uuid while being Invoked / Deployed
-	// TODO if a chaincode uses recursion this may need to be a stack of UUIDs or possibly a reference counting map
-	Uuid string
+	// TODO if a chaincode uses recursion this may need to be a stack of TxIDs or possibly a reference counting map
+	TxID string
+}
+
+func (stub *MockStub) GetTxID() string {
+	return stub.TxID
 }
 
 func (stub *MockStub) GetArgs() [][]byte {
@@ -72,16 +75,27 @@ func (stub *MockStub) GetStringArgs() []string {
 	return strargs
 }
 
+func (stub *MockStub) GetFunctionAndParameters() (function string, params []string) {
+	allargs := stub.GetStringArgs()
+	function = ""
+	params = []string{}
+	if len(allargs) >= 1 {
+		function = allargs[0]
+		params = allargs[1:]
+	}
+	return
+}
+
 // Used to indicate to a chaincode that it is part of a transaction.
 // This is important when chaincodes invoke each other.
 // MockStub doesn't support concurrent transactions at present.
-func (stub *MockStub) MockTransactionStart(uuid string) {
-	stub.Uuid = uuid
+func (stub *MockStub) MockTransactionStart(txid string) {
+	stub.TxID = txid
 }
 
 // End a mocked transaction, clearing the UUID.
 func (stub *MockStub) MockTransactionEnd(uuid string) {
-	stub.Uuid = ""
+	stub.TxID = ""
 }
 
 // Register a peer chaincode with this MockStub
@@ -92,28 +106,28 @@ func (stub *MockStub) MockPeerChaincode(invokableChaincodeName string, otherStub
 }
 
 // Initialise this chaincode,  also starts and ends a transaction.
-func (stub *MockStub) MockInit(uuid string, function string, args []string) ([]byte, error) {
-	stub.args = getBytes(function, args)
+func (stub *MockStub) MockInit(uuid string, args [][]byte) ([]byte, error) {
+	stub.args = args
 	stub.MockTransactionStart(uuid)
-	bytes, err := stub.cc.Init(stub, function, args)
+	bytes, err := stub.cc.Init(stub)
 	stub.MockTransactionEnd(uuid)
 	return bytes, err
 }
 
 // Invoke this chaincode, also starts and ends a transaction.
-func (stub *MockStub) MockInvoke(uuid string, function string, args []string) ([]byte, error) {
-	stub.args = getBytes(function, args)
+func (stub *MockStub) MockInvoke(uuid string, args [][]byte) ([]byte, error) {
+	stub.args = args
 	stub.MockTransactionStart(uuid)
-	bytes, err := stub.cc.Invoke(stub, function, args)
+	bytes, err := stub.cc.Invoke(stub)
 	stub.MockTransactionEnd(uuid)
 	return bytes, err
 }
 
 // Query this chaincode
-func (stub *MockStub) MockQuery(function string, args []string) ([]byte, error) {
-	stub.args = getBytes(function, args)
+func (stub *MockStub) MockQuery(args [][]byte) ([]byte, error) {
+	stub.args = args
 	// no transaction needed for queries
-	bytes, err := stub.cc.Query(stub, function, args)
+	bytes, err := stub.cc.Query(stub)
 	return bytes, err
 }
 
@@ -126,7 +140,7 @@ func (stub *MockStub) GetState(key string) ([]byte, error) {
 
 // PutState writes the specified `value` and `key` into the ledger.
 func (stub *MockStub) PutState(key string, value []byte) error {
-	if stub.Uuid == "" {
+	if stub.TxID == "" {
 		mockLogger.Error("Cannot PutState without a transactions - call stub.MockTransactionStart()?")
 		return errors.New("Cannot PutState without a transactions - call stub.MockTransactionStart()?")
 	}
@@ -185,45 +199,60 @@ func (stub *MockStub) RangeQueryState(startKey, endKey string) (StateRangeQueryI
 	return NewMockStateRangeQueryIterator(stub, startKey, endKey), nil
 }
 
-// Not implemented
+// CreateTable creates a new table given the table name and column definitions
 func (stub *MockStub) CreateTable(name string, columnDefinitions []*ColumnDefinition) error {
-	return nil
+	return createTableInternal(stub, name, columnDefinitions)
 }
 
-// Not implemented
+// GetTable returns the table for the specified table name or ErrTableNotFound
+// if the table does not exist.
 func (stub *MockStub) GetTable(tableName string) (*Table, error) {
-	return nil, nil
+	return getTable(stub, tableName)
 }
 
-// Not implemented
+// DeleteTable deletes an entire table and all associated rows.
 func (stub *MockStub) DeleteTable(tableName string) error {
-	return nil
+	return deleteTableInternal(stub, tableName)
 }
 
-// Not implemented
+// InsertRow inserts a new row into the specified table.
+// Returns -
+// true and no error if the row is successfully inserted.
+// false and no error if a row already exists for the given key.
+// false and a TableNotFoundError if the specified table name does not exist.
+// false and an error if there is an unexpected error condition.
 func (stub *MockStub) InsertRow(tableName string, row Row) (bool, error) {
-	return false, nil
+	return insertRowInternal(stub, tableName, row, false)
 }
 
-// Not implemented
+// ReplaceRow updates the row in the specified table.
+// Returns -
+// true and no error if the row is successfully updated.
+// false and no error if a row does not exist the given key.
+// flase and a TableNotFoundError if the specified table name does not exist.
+// false and an error if there is an unexpected error condition.
 func (stub *MockStub) ReplaceRow(tableName string, row Row) (bool, error) {
-	return false, nil
+	return insertRowInternal(stub, tableName, row, true)
 }
 
-// Not implemented
+// GetRow fetches a row from the specified table for the given key.
 func (stub *MockStub) GetRow(tableName string, key []Column) (Row, error) {
-	var r Row
-	return r, nil
+	return getRowInternal(stub, tableName, key)
 }
 
-// Not implemented
+// GetRows returns multiple rows based on a partial key. For example, given table
+// | A | B | C | D |
+// where A, C and D are keys, GetRows can be called with [A, C] to return
+// all rows that have A, C and any value for D as their key. GetRows could
+// also be called with A only to return all rows that have A and any value
+// for C and D as their key.
 func (stub *MockStub) GetRows(tableName string, key []Column) (<-chan Row, error) {
-	return nil, nil
+	return getRowsInternal(stub, tableName, key)
 }
 
-// Not implemented
+// DeleteRow deletes the row for the given key from the specified table.
 func (stub *MockStub) DeleteRow(tableName string, key []Column) error {
-	return nil
+	return deleteRowInternal(stub, tableName, key)
 }
 
 // Invokes a peered chaincode.
@@ -232,11 +261,10 @@ func (stub *MockStub) DeleteRow(tableName string, key []Column) error {
 // and register it with stub1 by calling stub1.MockPeerChaincode("stub2Hash", stub2)
 func (stub *MockStub) InvokeChaincode(chaincodeName string, args [][]byte) ([]byte, error) {
 	// TODO "args" here should possibly be a serialized pb.ChaincodeInput
-	function, params := getFuncArgs(args)
 	otherStub := stub.Invokables[chaincodeName]
 	mockLogger.Debug("MockStub", stub.Name, "Invoking peer chaincode", otherStub.Name, args)
 	//	function, strings := getFuncArgs(args)
-	bytes, err := otherStub.MockInvoke(stub.Uuid, function, params)
+	bytes, err := otherStub.MockInvoke(stub.TxID, args)
 	mockLogger.Debug("MockStub", stub.Name, "Invoked peer chaincode", otherStub.Name, "got", bytes, err)
 	return bytes, err
 }
@@ -250,8 +278,7 @@ func (stub *MockStub) QueryChaincode(chaincodeName string, args [][]byte) ([]byt
 		return nil, errors.New("Could not find peer chaincode to query")
 	}
 	mockLogger.Debug("MockStub", stub.Name, "Querying peer chaincode", otherStub.Name, args)
-	function, params := getFuncArgs(args)
-	bytes, err := otherStub.MockQuery(function, params)
+	bytes, err := otherStub.MockQuery(args)
 	mockLogger.Debug("MockStub", stub.Name, "Queried peer chaincode", otherStub.Name, "got", bytes, err)
 	return bytes, err
 }
@@ -297,7 +324,7 @@ func (stub *MockStub) GetPayload() ([]byte, error) {
 }
 
 // Not implemented
-func (stub *MockStub) GetTxTimestamp() (*gp.Timestamp, error) {
+func (stub *MockStub) GetTxTimestamp() (*timestamp.Timestamp, error) {
 	return nil, nil
 }
 
