@@ -69,7 +69,6 @@ JAVASHIM_DEPS =  $(shell git ls-files core/chaincode/shim/java)
 PROJECT_FILES = $(shell git ls-files)
 IMAGES = ccenv peer membersrvc javaenv orderer
 
-
 all: peer membersrvc checks
 
 checks: linter unit-test behave
@@ -83,18 +82,15 @@ gotools-clean:
 	cd gotools && $(MAKE) clean
 
 .PHONY: peer
-peer: build/bin/peer
-peer-image: build/image/peer/.dummy
+peer: build/image/peer/.dummy
 
 .PHONY: orderer
-orderer: build/bin/orderer
-orderer-image: build/image/orderer/.dummy
+orderer: build/image/orderer/.dummy
 
 .PHONY: membersrvc
-membersrvc: build/bin/membersrvc
-membersrvc-image: build/image/membersrvc/.dummy
+membersrvc: build/image/membersrvc/.dummy
 
-unit-test: peer-image gotools
+unit-test: peer gotools
 	@./scripts/goUnitTests.sh $(DOCKER_TAG) "$(GO_LDFLAGS)"
 
 unit-tests: unit-test
@@ -165,8 +161,7 @@ build/docker/bin/%: $(PROJECT_FILES)
 build/bin:
 	mkdir -p $@
 
-# Both peer and peer-image depend on ccenv-image and javaenv-image (all docker env images it supports)
-build/bin/peer: build/image/ccenv/.dummy build/image/javaenv/.dummy
+# Peer depends on ccenv-image and javaenv-image (all docker env images it supports)
 build/image/peer/.dummy: build/image/ccenv/.dummy build/image/javaenv/.dummy
 
 build/bin/block-listener:
