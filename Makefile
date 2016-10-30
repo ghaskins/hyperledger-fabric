@@ -48,13 +48,17 @@ endif
 PKGNAME = github.com/$(PROJECT_NAME)
 GO_LDFLAGS = -X $(PKGNAME)/metadata.Version=$(PROJECT_VERSION)
 CGO_FLAGS = CGO_CFLAGS=" " CGO_LDFLAGS="-lrocksdb -lstdc++ -lm -lz -lbz2 -lsnappy"
-UID = $(shell id -u)
 ARCH=$(shell uname -m)
+OS=$(shell uname)
 CHAINTOOL_RELEASE=v0.10.0
 BASEIMAGE_RELEASE=$(shell cat ./.baseimage-release)
 
 DOCKER_TAG=$(ARCH)-$(PROJECT_VERSION)
 BASE_DOCKER_TAG=$(ARCH)-$(BASEIMAGE_RELEASE)
+
+ifneq ($(OS),Darwin)
+DOCKER_FLAGS=--user=$(shell id -u)
+endif
 
 EXECUTABLES = go docker git curl
 K := $(foreach exec,$(EXECUTABLES),\
@@ -124,7 +128,7 @@ linter: gotools
 	@echo "Building $@"
 	@mkdir -p $(@D)
 	@docker run -i \
-		--user=$(UID) \
+		$(DOCKER_FLAGS) \
 		-v $(abspath vendor/github.com/golang/protobuf):/opt/gopath/src/github.com/golang/protobuf \
 		-v $(abspath $(@D)):/opt/gopath/bin \
 		hyperledger/fabric-baseimage:$(BASE_DOCKER_TAG) go install github.com/golang/protobuf/protoc-gen-go
@@ -151,7 +155,7 @@ build/docker/bin/%: $(PROJECT_FILES)
 	@echo "Building $@"
 	@mkdir -p build/docker/bin build/docker/pkg
 	@docker run -i \
-		--user=$(UID) \
+		$(DOCKER_FLAGS) \
 		-v $(abspath build/docker/bin):/opt/gopath/bin \
 		-v $(abspath build/docker/pkg):/opt/gopath/pkg \
 		-v $(abspath .):/opt/gopath/src/$(PKGNAME) \
