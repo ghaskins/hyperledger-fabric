@@ -1,0 +1,4 @@
+FROM hyperledger/fabric-baseimage:_BASE_TAG_
+COPY bin/* /usr/local/bin/
+RUN apt-get update -y && \
+    apt-get install -y docker.io docker-compose

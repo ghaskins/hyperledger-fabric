@@ -67,7 +67,7 @@ K := $(foreach exec,$(EXECUTABLES),\
 GOSHIM_DEPS = $(shell ./scripts/goListFiles.sh $(PKGNAME)/core/chaincode/shim | sort | uniq)
 JAVASHIM_DEPS =  $(shell git ls-files core/chaincode/shim/java)
 PROJECT_FILES = $(shell git ls-files)
-IMAGES = ccenv peer membersrvc javaenv orderer
+IMAGES = ccenv peer membersrvc javaenv orderer testenv
 
 all: peer membersrvc checks
 
@@ -90,7 +90,9 @@ orderer: build/image/orderer/.dummy
 .PHONY: membersrvc
 membersrvc: build/image/membersrvc/.dummy
 
-unit-test: peer gotools
+testenv: build/image/testenv/.dummy
+
+unit-test: peer testenv
 	@./scripts/goUnitTests.sh $(DOCKER_TAG) "$(GO_LDFLAGS)"
 
 unit-tests: unit-test
@@ -161,6 +163,17 @@ build/docker/bin/%: $(PROJECT_FILES)
 build/bin:
 	mkdir -p $@
 
+build/docker/gotools/.dummy: gotools/Makefile
+	@mkdir -p $(@D)/bin $(@D)/obj
+	@docker run -i \
+		$(DOCKER_FLAGS) \
+		-v $(abspath $(@D)):/opt/gotools \
+		-v $(abspath .):/opt/gopath/src/$(PKGNAME) \
+		-w /opt/gopath/src/$(PKGNAME)/gotools \
+		hyperledger/fabric-baseimage:$(BASE_DOCKER_TAG) \
+		make install BINDIR=/opt/gotools/bin OBJDIR=/opt/gotools/obj
+	@touch $@
+
 # Peer depends on ccenv-image and javaenv-image (all docker env images it supports)
 build/image/peer/.dummy: build/image/ccenv/.dummy build/image/javaenv/.dummy
 
@@ -204,6 +217,19 @@ build/image/javaenv/.dummy: Makefile $(JAVASHIM_DEPS)
 	@git ls-files protos settings.gradle  | tar -jcT - > $(@D)/protos.tar.bz2
 	docker build -t $(PROJECT_NAME)-javaenv $(@D)
 	docker tag $(PROJECT_NAME)-javaenv $(PROJECT_NAME)-javaenv:$(DOCKER_TAG)
+	@touch $@
+
+# Special override for testenv
+build/image/testenv/.dummy: build/docker/gotools/.dummy
+	@echo "Building docker testenv-image"
+	@mkdir -p $(@D)/bin
+	@cat images/testenv/Dockerfile.in \
+		| sed -e 's/_BASE_TAG_/$(BASE_DOCKER_TAG)/g' \
+		| sed -e 's/_TAG_/$(DOCKER_TAG)/g' \
+		> $(@D)/Dockerfile
+	@cp build/docker/gotools/bin/* $(@D)/bin
+	docker build -t $(PROJECT_NAME)-testenv $(@D)
+	docker tag $(PROJECT_NAME)-testenv $(PROJECT_NAME)-testenv:$(DOCKER_TAG)
 	@touch $@
 
 build/image/peer/config: peer/core.yaml
