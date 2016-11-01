@@ -105,9 +105,13 @@ behave: behave-deps
 	@echo "Running behave tests"
 	@cd bddtests; behave $(BEHAVE_OPTS)
 
-linter: gotools
+linter: testenv
 	@echo "LINT: Running code checks.."
-	@./scripts/golinter.sh
+	@docker run -i \
+		$(DOCKER_FLAGS) \
+		-v $(abspath .):/opt/gopath/src/$(PKGNAME) \
+		-w /opt/gopath/src/$(PKGNAME) \
+		hyperledger/fabric-testenv:$(DOCKER_TAG) ./scripts/golinter.sh
 
 # We (re)build protoc-gen-go from within docker context so that
 # we may later inject the binary into a different docker environment
