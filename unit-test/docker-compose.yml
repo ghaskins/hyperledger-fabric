@@ -1,0 +1,24 @@
+dind:
+  image: docker:dind
+  privileged: true
+
+vp:
+  image: hyperledger/fabric-peer
+  links:
+    - dind
+  expose:
+    - 7051
+  environment:
+    - CORE_PEER_ADDRESSAUTODETECT=true
+    - CORE_VM_ENDPOINT=http://dind:2375
+
+unit-tests:
+  image: hyperledger/fabric-testenv
+  links:
+    - dind
+    - vp
+  environment:
+    - CORE_VM_ENDPOINT=http://dind:2375
+  volumes:
+    - ${GOPATH}/src/github.com/hyperledger/fabric:/opt/gopath/src/github.com/hyperledger/fabric
+  command: gocov test -ldflags "${GO_LDFLAGS}" ${PKGS} -p 1 -timeout=20m

@@ -93,7 +93,7 @@ membersrvc: build/image/membersrvc/.dummy
 testenv: build/image/testenv/.dummy
 
 unit-test: peer testenv
-	@./scripts/goUnitTests.sh $(DOCKER_TAG) "$(GO_LDFLAGS)"
+	@cd unit-test && ./run.sh $(DOCKER_TAG) "$(GO_LDFLAGS)"
 
 unit-tests: unit-test
 
