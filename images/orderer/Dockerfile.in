@@ -1,0 +1,3 @@
+FROM hyperledger/fabric-baseimage:_BASE_TAG_
+RUN mkdir -p /var/hyperledger/db
+COPY bin/* /usr/local/bin
