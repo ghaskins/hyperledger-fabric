@@ -1,0 +1,25 @@
+orderer:
+  image: hyperledger/fabric-orderer
+  environment:
+    - ORDERER_GENERAL_LEDGERTYPE=ram
+    - ORDERER_GENERAL_BATCHTIMEOUT=10s
+    - ORDERER_GENERAL_BATCHSIZE=10
+    - ORDERER_GENERAL_MAXWINDOWSIZE=1000
+    - ORDERER_GENERAL_ORDERERTYPE=solo
+    - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+    - ORDERER_GENERAL_LISTENPORT=5151
+    - ORDERER_RAMLEDGER_HISTORY_SIZE=100
+  expose:
+    - 5151
+
+vp:
+  image: hyperledger/fabric-peer
+  links:
+    - orderer
+  expose:
+    - 7051
+  environment:
+    - CORE_PEER_ADDRESSAUTODETECT=true
+    - CORE_PEER_COMMITTER_LEDGER_ORDERER=orderer:5151
+  volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
