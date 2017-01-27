@@ -126,8 +126,8 @@ type QueryExecutor interface {
 
 // HistoryQueryExecutor executes the history queries
 type HistoryQueryExecutor interface {
-	// GetHistoryForKey retrieves the history of values for a key.
-	GetHistoryForKey(namespace string, key string) (ResultsIterator, error)
+	// GetTransactionsForKey retrieves the set of transactons that updated this key by doing a key range query.
+	GetTransactionsForKey(namespace string, key string, includeValues bool, includeTransactions bool) (ResultsIterator, error)
 }
 
 // TxSimulator simulates a transaction on a consistent snapshot of the 'as recent state as possible'
@@ -173,8 +173,9 @@ type KV struct {
 
 // KeyModification - QueryResult for History.
 type KeyModification struct {
-	TxID  string
-	Value []byte
+	TxID        string
+	Value       []byte
+	Transaction *pb.Transaction
 }
 
 // QueryRecord - Result structure for query records. Holds a namespace, key and record.

@@ -14,21 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package historydb
+package histmgr
 
 import "github.com/hyperledger/fabric/protos/common"
 import "github.com/hyperledger/fabric/core/ledger"
 
-// HistoryDBProvider provides an instance of a history DB
-type HistoryDBProvider interface {
-	// GetDBHandle returns a handle to a HistoryDB
-	GetDBHandle(id string) (HistoryDB, error)
-	// Close closes all the HistoryDB instances and releases any resources held by HistoryDBProvider
-	Close()
-}
-
-// HistoryDB - an interface that a history database should implement
-type HistoryDB interface {
+// HistMgr - an interface that a history manager should implement
+type HistMgr interface {
 	NewHistoryQueryExecutor() (ledger.HistoryQueryExecutor, error)
 	Commit(block *common.Block) error
 	GetBlockNumFromSavepoint() (uint64, error)

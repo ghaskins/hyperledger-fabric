@@ -63,11 +63,6 @@ func GetStateLevelDBPath() string {
 	return filepath.Join(GetRootPath(), "stateLeveldb")
 }
 
-// GetHistoryLevelDBPath returns the filesystem path that is used to maintain the history level db
-func GetHistoryLevelDBPath() string {
-	return filepath.Join(GetRootPath(), "historyLeveldb")
-}
-
 // GetBlockStorePath returns the filesystem path that is used by the block store
 func GetBlockStorePath() string {
 	return filepath.Join(GetRootPath(), "blocks")
@@ -89,6 +84,13 @@ func GetCouchDBDefinition() *CouchDBDef {
 }
 
 //IsHistoryDBEnabled exposes the historyDatabase variable
+//History database can only be enabled if couchDb is enabled
+//as it the history stored in the same couchDB instance.
+//TODO put History DB in it's own instance
 func IsHistoryDBEnabled() bool {
-	return viper.GetBool("ledger.state.historyDatabase")
+	historyDatabase = viper.GetBool("ledger.state.historyDatabase")
+	if IsCouchDBEnabled() && historyDatabase {
+		return historyDatabase
+	}
+	return false
 }
