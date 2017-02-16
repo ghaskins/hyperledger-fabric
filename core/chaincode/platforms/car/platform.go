@@ -21,6 +21,11 @@ import (
 	"io/ioutil"
 	"strings"
 
+	"bytes"
+	"fmt"
+	"io"
+
+	"github.com/fsouza/go-dockerclient"
 	cutil "github.com/hyperledger/fabric/core/container/util"
 	pb "github.com/hyperledger/fabric/protos/peer"
 )
@@ -51,10 +56,8 @@ func (carPlatform *Platform) GenerateDockerfile(cds *pb.ChaincodeDeploymentSpec)
 	var buf []string
 
 	//let the executable's name be chaincode ID's name
-	buf = append(buf, cutil.GetDockerfileFromConfig("chaincode.car.Dockerfile"))
-	buf = append(buf, "COPY codepackage.car /tmp/codepackage.car")
-	// invoking directly for maximum JRE compatiblity
-	buf = append(buf, "RUN java -jar /usr/local/bin/chaintool buildcar /tmp/codepackage.car -o /usr/local/bin/chaincode && rm /tmp/codepackage.car")
+	buf = append(buf, "FROM "+cutil.GetDockerfileFromConfig("chaincode.car.runtime"))
+	buf = append(buf, "ADD chaincode.tar /usr/local/bin")
 
 	dockerFileContents := strings.Join(buf, "\n")
 
@@ -62,6 +65,72 @@ func (carPlatform *Platform) GenerateDockerfile(cds *pb.ChaincodeDeploymentSpec)
 }
 
 func (carPlatform *Platform) GenerateDockerBuild(cds *pb.ChaincodeDeploymentSpec, tw *tar.Writer) error {
+	client, err := cutil.NewDockerClient()
+	if err != nil {
+		return fmt.Errorf("Error creating docker client: %s", err)
+	}
 
-	return cutil.WriteBytesToPackage("codepackage.car", cds.CodePackage, tw)
+	container, err := client.CreateContainer(docker.CreateContainerOptions{
+		Config: &docker.Config{
+			Image:        cutil.GetDockerfileFromConfig("chaincode.car.builder"),
+			Cmd:          []string{"java", "-jar", "/usr/local/bin/chaintool", "buildcar", "/tmp/codepackage.car", "-o", "/tmp/output/chaincode"},
+			AttachStdout: true,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("Error creating container: %s", err)
+	}
+	defer client.RemoveContainer(docker.RemoveContainerOptions{ID: container.ID})
+
+	codepackage, output := io.Pipe()
+
+	go func() {
+		tw := tar.NewWriter(output)
+
+		err := cutil.WriteBytesToPackage("codepackage.car", cds.CodePackage, tw)
+
+		tw.Close()
+		output.CloseWithError(err)
+	}()
+
+	err = client.UploadToContainer(container.ID, docker.UploadToContainerOptions{
+		Path:        "/tmp",
+		InputStream: codepackage,
+	})
+	if err != nil {
+		return fmt.Errorf("Error uploading codepackage to container: %s", err)
+	}
+
+	stdout := bytes.NewBuffer(nil)
+	_, err = client.AttachToContainerNonBlocking(docker.AttachToContainerOptions{
+		Container:    container.ID,
+		OutputStream: stdout,
+		Logs:         true,
+		Stdout:       true,
+		Stream:       true,
+	})
+	if err != nil {
+		return fmt.Errorf("Error attaching to container: %s", err)
+	}
+
+	err = client.StartContainer(container.ID, nil)
+	if err != nil {
+		return fmt.Errorf("Error building CAR: %s \"%s\"", err, stdout.String())
+	}
+
+	_, err = client.WaitContainer(container.ID)
+	if err != nil {
+		return fmt.Errorf("Error waiting for container to complete: %s", err)
+	}
+
+	payload := bytes.NewBuffer(nil)
+	err = client.DownloadFromContainer(container.ID, docker.DownloadFromContainerOptions{
+		Path:         "/tmp/output/.",
+		OutputStream: payload,
+	})
+	if err != nil {
+		return fmt.Errorf("Error downloading payload: %s", err)
+	}
+
+	return cutil.WriteBytesToPackage("chaincode.tar", payload.Bytes(), tw)
 }
