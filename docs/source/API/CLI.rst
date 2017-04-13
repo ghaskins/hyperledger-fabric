@@ -43,7 +43,7 @@ failure. Upon success, many of the subcommands produce a result on
 
 Command \| **stdout** result in the event of success --- \| ---
 ``version`` \| String form of ``peer.version`` defined in
-`core.yaml <https://github.com/hyperledger/fabric/blob/master/peer/core.yaml>`__
+`core.yaml <https://github.com/hyperledger/fabric/blob/master/sampleconfig/core.yaml>`__
 ``node start`` \| N/A ``node status`` \| String form of
 `StatusCode <https://github.com/hyperledger/fabric/blob/master/protos/server_admin.proto#L36>`__
 ``node stop`` \| String form of

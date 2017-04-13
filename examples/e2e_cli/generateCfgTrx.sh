@@ -10,8 +10,8 @@ echo "Channel name - "$CHANNEL_NAME
 echo
 
 #Backup the original configtx.yaml
-cp ../../common/configtx/tool/configtx.yaml ../../common/configtx/tool/configtx.yaml.orig
-cp configtx.yaml ../../common/configtx/tool/configtx.yaml
+cp ../../sampleconfig/configtx.yaml ../../sampleconfig/configtx.yaml.orig
+cp configtx.yaml ../../sampleconfig/configtx.yaml
 
 cd $PWD/../../
 echo "Building configtxgen"
@@ -26,5 +26,5 @@ echo "Generating channel configuration transaction"
 mv channel.tx examples/e2e_cli/crypto/orderer/channel.tx
 
 #reset configtx.yaml file to its original
-cp common/configtx/tool/configtx.yaml.orig common/configtx/tool/configtx.yaml
-rm common/configtx/tool/configtx.yaml.orig
+cp sampleconfig/configtx.yaml.orig sampleconfig/configtx.yaml
+rm sampleconfig/configtx.yaml.orig
