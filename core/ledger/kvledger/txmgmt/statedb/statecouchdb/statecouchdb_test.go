@@ -32,7 +32,7 @@ import (
 func TestMain(m *testing.M) {
 
 	//call a helper method to load the core.yaml, will be used to detect if CouchDB is enabled
-	ledgertestutil.SetupCoreYAMLConfig("./../../../../../../peer")
+	ledgertestutil.SetupCoreYAMLConfig()
 	viper.Set("peer.fileSystemPath", "/tmp/fabric/ledgertests/kvledger/txmgmt/statedb/statecouchdb")
 	viper.Set("ledger.state.stateDatabase", "CouchDB")
 
