@@ -24,6 +24,7 @@ import (
 	"fmt"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/core/config"
 	"github.com/hyperledger/fabric/protos/msp"
 	"github.com/stretchr/testify/assert"
 )
@@ -410,7 +411,13 @@ var mspMgr MSPManager
 
 func TestMain(m *testing.M) {
 	var err error
-	conf, err = GetLocalMspConfig("./sampleconfig/", nil, "DEFAULT")
+	mspDir, err := config.GetDevMspDir()
+	if err != nil {
+		fmt.Printf("Errog getting DevMspDir: %s", err)
+		os.Exit(-1)
+	}
+
+	conf, err = GetLocalMspConfig(mspDir, nil, "DEFAULT")
 	if err != nil {
 		fmt.Printf("Setup should have succeeded, got err %s instead", err)
 		os.Exit(-1)

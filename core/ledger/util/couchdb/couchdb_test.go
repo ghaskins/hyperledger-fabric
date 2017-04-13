@@ -68,7 +68,7 @@ type Asset struct {
 var assetJSON = []byte(`{"asset_name":"marble1","color":"blue","size":"35","owner":"jerry"}`)
 
 func TestMain(m *testing.M) {
-	ledgertestutil.SetupCoreYAMLConfig("./../../../../peer")
+	ledgertestutil.SetupCoreYAMLConfig()
 	viper.Set("ledger.state.stateDatabase", "CouchDB")
 	result := m.Run()
 	viper.Set("ledger.state.stateDatabase", "goleveldb")
@@ -78,7 +78,7 @@ func TestMain(m *testing.M) {
 func TestDBConnectionDef(t *testing.T) {
 
 	//call a helper method to load the core.yaml
-	ledgertestutil.SetupCoreYAMLConfig("./../../../../peer")
+	ledgertestutil.SetupCoreYAMLConfig()
 
 	//create a new connection
 	_, err := CreateConnectionDefinition(connectURL, "", "", maxRetries, maxRetriesOnStartup, requestTimeout)
