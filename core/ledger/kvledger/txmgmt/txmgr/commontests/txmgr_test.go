@@ -28,7 +28,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	ledgertestutil.SetupCoreYAMLConfig("./../../../../../../peer")
+	ledgertestutil.SetupCoreYAMLConfig()
 }
 
 func TestTxSimulatorWithNoExistingData(t *testing.T) {
