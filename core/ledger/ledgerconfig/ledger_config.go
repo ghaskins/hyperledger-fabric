@@ -19,6 +19,7 @@ package ledgerconfig
 import (
 	"path/filepath"
 
+	"github.com/hyperledger/fabric/core/config"
 	"github.com/spf13/viper"
 )
 
@@ -50,7 +51,7 @@ func IsCouchDBEnabled() bool {
 // GetRootPath returns the filesystem path.
 // All ledger related contents are expected to be stored under this path
 func GetRootPath() string {
-	sysPath := viper.GetString("peer.fileSystemPath")
+	sysPath := config.GetPath("peer.fileSystemPath")
 	return filepath.Join(sysPath, "ledgersData")
 }
 

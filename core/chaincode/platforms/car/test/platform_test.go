@@ -27,7 +27,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	config.SetupTestConfig("../../../../../peer")
+	config.SetupTestConfig()
 	os.Exit(m.Run())
 }
 

@@ -18,8 +18,6 @@ package config
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -28,6 +26,10 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/op/go-logging"
 	"github.com/spf13/viper"
+
+	cf "github.com/hyperledger/fabric/core/config"
+
+	"path/filepath"
 
 	bccsp "github.com/hyperledger/fabric/bccsp/factory"
 )
@@ -150,13 +152,13 @@ var defaults = TopLevel{
 		ListenPort:     7050,
 		GenesisMethod:  "provisional",
 		GenesisProfile: "SampleSingleMSPSolo",
-		GenesisFile:    "./genesisblock",
+		GenesisFile:    "genesisblock",
 		Profile: Profile{
 			Enabled: false,
 			Address: "0.0.0.0:6060",
 		},
 		LogLevel:    "INFO",
-		LocalMSPDir: "../msp/sampleconfig/",
+		LocalMSPDir: "msp",
 		LocalMSPID:  "DEFAULT",
 		BCCSP:       &bccsp.DefaultOpts,
 	},
@@ -194,9 +196,7 @@ var defaults = TopLevel{
 	},
 }
 
-func (c *TopLevel) completeInitialization() {
-	defer logger.Infof("Validated configuration to: %+v", c)
-
+func (c *TopLevel) initDefaults() {
 	for {
 		switch {
 		case c.General.LedgerType == "":
@@ -228,10 +228,7 @@ func (c *TopLevel) completeInitialization() {
 			c.General.Profile.Address = defaults.General.Profile.Address
 		case c.General.LocalMSPDir == "":
 			logger.Infof("General.LocalMSPDir unset, setting to %s", defaults.General.LocalMSPDir)
-			// Note, this is a bit of a weird one, the orderer may set the ORDERER_CFG_PATH after
-			// the file is initialized, so we cannot initialize this in the structure, so we
-			// deference the env portion here
-			c.General.LocalMSPDir = filepath.Join(os.Getenv("ORDERER_CFG_PATH"), defaults.General.LocalMSPDir)
+			c.General.LocalMSPDir = defaults.General.LocalMSPDir
 		case c.General.LocalMSPID == "":
 			logger.Infof("General.LocalMSPID unset, setting to %s", defaults.General.LocalMSPID)
 			c.General.LocalMSPID = defaults.General.LocalMSPID
@@ -253,31 +250,20 @@ func (c *TopLevel) completeInitialization() {
 	}
 }
 
+func (c *TopLevel) completeInitialization(configDir string) {
+	defer logger.Infof("Validated configuration to: %+v", c)
+	c.initDefaults()
+
+	// Translate any paths
+	c.General.GenesisFile = cf.TranslatePath(configDir, c.General.GenesisFile)
+	c.General.LocalMSPDir = cf.TranslatePath(configDir, c.General.LocalMSPDir)
+}
+
 // Load parses the orderer.yaml file and environment, producing a struct suitable for config use
 func Load() *TopLevel {
 	config := viper.New()
 
-	config.SetConfigName("orderer")
-	cfgPath := os.Getenv("ORDERER_CFG_PATH")
-	if cfgPath == "" {
-		logger.Infof("No orderer cfg path set, assuming development environment, deriving from go path")
-		// Path to look for the config file in based on GOPATH
-		gopath := os.Getenv("GOPATH")
-		for _, p := range filepath.SplitList(gopath) {
-			ordererPath := filepath.Join(p, "src/github.com/hyperledger/fabric/orderer/")
-			if _, err := os.Stat(filepath.Join(ordererPath, "orderer.yaml")); err != nil {
-				// The yaml file does not exist in this component of the go src
-				continue
-			}
-			cfgPath = ordererPath
-		}
-		if cfgPath == "" {
-			logger.Fatalf("Could not find orderer.yaml, try setting ORDERER_CFG_PATH or GOPATH correctly")
-		}
-		logger.Infof("Setting ORDERER_CFG_PATH to: %s", cfgPath)
-		os.Setenv("ORDERER_CFG_PATH", cfgPath)
-	}
-	config.AddConfigPath(cfgPath) // Path to look for the config file in
+	cf.InitViper(config, "orderer")
 
 	// for environment variables
 	config.SetEnvPrefix(Prefix)
@@ -297,7 +283,7 @@ func Load() *TopLevel {
 		panic(fmt.Errorf("Error unmarshaling into structure: %s", err))
 	}
 
-	uconf.completeInitialization()
+	uconf.completeInitialization(filepath.Dir(config.ConfigFileUsed()))
 
 	return &uconf
 }
