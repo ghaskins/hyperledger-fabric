@@ -42,6 +42,7 @@ build/nodes/%: build/nodes/%/msp build/nodes/%/tls build/nodes/%/configtx.yaml
 build/nodes/orderer: build/nodes/orderer/orderer.yaml
 build/nodes/orderer: build/nodes/orderer/genesis.block
 build/nodes/orderer: build/nodes/orderer/channel.tx
+build/nodes/orderer: build/nodes/orderer/tls/ca.crt
 build/nodes/orderer: CRYPTO_PATH=$(ORDERER_PATH)
 
 build/nodes/peer%: build/nodes/peer%/core.yaml
@@ -55,8 +56,13 @@ build/nodes/peer%: CRYPTO_PATH=$(PEER_PATH)
 .PRECIOUS: %/tls
 %/tls: build/.cryptogen
 	@mkdir -p $@
-	cp $(CRYPTO_PATH)/keystore/* $@/peer.key
-	cp $(CRYPTO_PATH)/signcerts/* $@/peer.crt
+	cp $(CRYPTO_PATH)/keystore/* $@/server.key
+	cp $(CRYPTO_PATH)/signcerts/* $@/server.crt
+
+.PRECIOUS: %/tls
+%/tls/ca.crt: build/.cryptogen
+	@mkdir -p ${@D}
+	cp $(CRYPTO_PATH)/cacerts/* $@
 
 clean:
 	rm -rf build
