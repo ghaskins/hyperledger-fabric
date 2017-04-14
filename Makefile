@@ -19,6 +19,7 @@
 #   - all (default) - builds all targets and runs all tests/checks
 #   - checks - runs all tests/checks
 #   - configtxgen - builds a native configtxgen binary
+#   - cryptogen - builds a native cryptogen binary
 #   - peer - builds a native fabric peer binary
 #   - orderer - builds a native fabric orderer binary
 #   - unit-test - runs the go-test based unit tests
@@ -112,9 +113,11 @@ peer-docker: build/image/peer/$(DUMMY)
 orderer: build/bin/orderer
 orderer-docker: build/image/orderer/$(DUMMY)
 
-.PHONY: configtxgen
 configtxgen: GO_TAGS+= nopkcs11
 configtxgen: build/bin/configtxgen
+
+cryptogen: GO_TAGS+= nopkcs11
+cryptogen: build/bin/cryptogen
 
 javaenv: build/image/javaenv/$(DUMMY)
 
@@ -135,7 +138,7 @@ test-cmd:
 	@echo "go test -ldflags \"$(GO_LDFLAGS)\""
 
 docker: $(patsubst %,build/image/%/$(DUMMY), $(IMAGES))
-native: peer orderer
+native: peer orderer configtxgen cryptogen
 
 BEHAVE_ENVIRONMENTS = kafka orderer orderer-1-kafka-1 orderer-1-kafka-3
 BEHAVE_ENVIRONMENT_TARGETS = $(patsubst %,bddtests/environments/%, $(BEHAVE_ENVIRONMENTS))
