@@ -7,6 +7,8 @@ CRYPTO_PATH = build/crypto-config
 ORDERER_PATH = $(CRYPTO_PATH)/ordererOrganizations/ordererOrg1/orderers/ordererOrg1Orderer1
 PEER_PATH = $(CRYPTO_PATH)/peerOrganizations/peerOrg1/peers
 
+PROFILE=SingleOrg
+
 e2e: $(patsubst %,build/nodes/%,$(NODES))
 
 build:
@@ -21,7 +23,14 @@ build/nodes/%.yaml:
 	@mkdir -p ${@D}
 	cp ${@F} $@
 
-build/nodes/orderer: build/.cryptogen build/nodes/orderer/configtx.yaml build/nodes/orderer/orderer.yaml
+%/genesis.block: %/configtx.yaml
+	mkdir -p ${@D}
+	FABRIC_CFG_PATH=${@D} configtxgen -profile $(PROFILE) -outputBlock ${@F}
+
+build/nodes/orderer: build/nodes/orderer/configtx.yaml
+build/nodes/orderer: build/nodes/orderer/orderer.yaml
+build/nodes/orderer: build/nodes/orderer/genesis.block
+build/nodes/orderer: build/.cryptogen
 	@echo $@
 	@mkdir -p $@/tls
 	cp -R $(ORDERER_PATH) $@/msp
