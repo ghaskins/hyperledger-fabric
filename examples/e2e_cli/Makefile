@@ -3,6 +3,9 @@ all: e2e
 #NODES += $(patsubst %,peerOrg1Peer%,$(shell seq 1 4))
 NODES += orderer
 
+
+CHANNEL_NAME ?= mychannel
+
 BASECRYPTO_PATH = build/crypto-config
 ORDERER_PATH = $(BASECRYPTO_PATH)/ordererOrganizations/ordererOrg1/orderers/ordererOrg1Orderer1
 PEER_PATH = $(BASECRYPTO_PATH)/peerOrganizations/peerOrg1/peers
@@ -24,14 +27,21 @@ build/nodes/%.yaml:
 	cp ${@F} $@
 
 %/genesis.block: %/configtx.yaml %/msp
-	mkdir -p ${@D}
+	@mkdir -p ${@D}
 	FABRIC_CFG_PATH=${@D} configtxgen -profile $(PROFILE) -outputBlock $@
 
+%/channel.tx: %/configtx.yaml %/msp
+	@mkdir -p ${@D}
+	FABRIC_CFG_PATH=${@D} configtxgen -profile $(PROFILE) \
+		-outputCreateChannelTx $@ \
+		-channelID ${CHANNEL_NAME}
+
 build/nodes/%: build/nodes/%/msp build/nodes/%/tls build/nodes/%/configtx.yaml
-	echo "Built $@"
+	@echo "Built $@"
 
 build/nodes/orderer: build/nodes/orderer/orderer.yaml
 build/nodes/orderer: build/nodes/orderer/genesis.block
+build/nodes/orderer: build/nodes/orderer/channel.tx
 build/nodes/orderer: CRYPTO_PATH=$(ORDERER_PATH)
 
 build/nodes/peer%: build/nodes/peer%/core.yaml
