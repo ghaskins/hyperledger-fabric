@@ -17,14 +17,14 @@ General:
     LedgerType: ram
 
     # Listen address: The IP on which to bind to listen.
-    ListenAddress: 127.0.0.1
+    ListenAddress: 0.0.0.0
 
     # Listen port: The port on which to bind to listen.
     ListenPort: 7050
 
     # TLS: TLS settings for the GRPC server.
     TLS:
-        Enabled: false
+        Enabled: true
         PrivateKey:
         Certificate:
         RootCAs:
@@ -40,7 +40,7 @@ General:
     # the parameters in the Genesis section to dynamically generate a new
     # genesis block. File uses the file provided by GenesisFile as the genesis
     # block.
-    GenesisMethod: provisional
+    GenesisMethod: file
 
     # Genesis profile: The profile to use when using the provisional
     # GenesisMethod, See the configtx.yaml file for the descriptions of the
@@ -49,7 +49,7 @@ General:
 
     # Genesis file: The file containing the genesis block. Used by the orderer
     # when GenesisMethod is set to "file".
-    GenesisFile: genesisblock
+    GenesisFile: genesis.block
 
     # LocalMSPDir is where to find the crypto material needed for signing in the
     # orderer. It is set relative here as a default for dev environments but

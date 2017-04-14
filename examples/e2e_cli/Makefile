@@ -23,7 +23,10 @@ build/nodes/%.yaml:
 
 build/nodes/orderer: build/.cryptogen build/nodes/orderer/configtx.yaml build/nodes/orderer/orderer.yaml
 	@echo $@
-	@mkdir -p $@
+	@mkdir -p $@/tls
+	cp -R $(ORDERER_PATH) $@/msp
+	cp $(ORDERER_PATH)/keystore/* $@/tls/peer.key
+	cp $(ORDERER_PATH)/signcerts/* $@/tls/peer.crt
 
 build/nodes/peer%: build/.cryptogen build/nodes/peer%/configtx.yaml build/nodes/peer%/core.yaml
 	@echo $@
