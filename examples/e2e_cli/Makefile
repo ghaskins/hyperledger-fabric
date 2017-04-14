@@ -1,11 +1,11 @@
 all: e2e
 
-NODES += $(patsubst %,peerOrg1Peer%,$(shell seq 1 4))
+#NODES += $(patsubst %,peerOrg1Peer%,$(shell seq 1 4))
 NODES += orderer
 
-CRYPTO_PATH = build/crypto-config
-ORDERER_PATH = $(CRYPTO_PATH)/ordererOrganizations/ordererOrg1/orderers/ordererOrg1Orderer1
-PEER_PATH = $(CRYPTO_PATH)/peerOrganizations/peerOrg1/peers
+BASECRYPTO_PATH = build/crypto-config
+ORDERER_PATH = $(BASECRYPTO_PATH)/ordererOrganizations/ordererOrg1/orderers/ordererOrg1Orderer1
+PEER_PATH = $(BASECRYPTO_PATH)/peerOrganizations/peerOrg1/peers
 
 PROFILE=SingleOrg
 
@@ -23,26 +23,28 @@ build/nodes/%.yaml:
 	@mkdir -p ${@D}
 	cp ${@F} $@
 
-%/genesis.block: %/configtx.yaml
+%/genesis.block: %/configtx.yaml %/msp
 	mkdir -p ${@D}
 	FABRIC_CFG_PATH=${@D} configtxgen -profile $(PROFILE) -outputBlock ${@F}
 
-build/nodes/orderer: build/nodes/orderer/configtx.yaml
+build/nodes/%: build/nodes/%/msp build/nodes/%/tls build/nodes/%/configtx.yaml
+	echo "Built $@"
+
 build/nodes/orderer: build/nodes/orderer/orderer.yaml
 build/nodes/orderer: build/nodes/orderer/genesis.block
-build/nodes/orderer: build/.cryptogen
-	@echo $@
-	@mkdir -p $@/tls
-	cp -R $(ORDERER_PATH) $@/msp
-	cp $(ORDERER_PATH)/keystore/* $@/tls/peer.key
-	cp $(ORDERER_PATH)/signcerts/* $@/tls/peer.crt
+build/nodes/orderer: CRYPTO_PATH=$(ORDERER_PATH)
 
-build/nodes/peer%: build/.cryptogen build/nodes/peer%/configtx.yaml build/nodes/peer%/core.yaml
-	@echo $@
-	@mkdir -p $@/tls
-	cp -R $(PEER_PATH)/${@F} $@/msp
-	cp $(PEER_PATH)/${@F}/keystore/* $@/tls/peer.key
-	cp $(PEER_PATH)/${@F}/signcerts/* $@/tls/peer.crt
+build/nodes/peer%: build/nodes/peer%/core.yaml
+build/nodes/peer%: CRYPTO_PATH=$(PEER_PATH)
+
+%/msp: build/.cryptogen
+	@mkdir -p $@
+	cp -R $(CRYPTO_PATH) $@
+
+%/tls: build/.cryptogen
+	@mkdir -p $@
+	cp $(CRYPTO_PATH)/keystore/* $@/peer.key
+	cp $(CRYPTO_PATH)/signcerts/* $@/peer.crt
 
 clean:
 	rm -rf build
