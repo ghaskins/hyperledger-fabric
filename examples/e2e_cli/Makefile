@@ -25,7 +25,7 @@ build/nodes/%.yaml:
 
 %/genesis.block: %/configtx.yaml %/msp
 	mkdir -p ${@D}
-	FABRIC_CFG_PATH=${@D} configtxgen -profile $(PROFILE) -outputBlock ${@F}
+	FABRIC_CFG_PATH=${@D} configtxgen -profile $(PROFILE) -outputBlock $@
 
 build/nodes/%: build/nodes/%/msp build/nodes/%/tls build/nodes/%/configtx.yaml
 	echo "Built $@"
@@ -37,10 +37,12 @@ build/nodes/orderer: CRYPTO_PATH=$(ORDERER_PATH)
 build/nodes/peer%: build/nodes/peer%/core.yaml
 build/nodes/peer%: CRYPTO_PATH=$(PEER_PATH)
 
+.PRECIOUS: %/msp
 %/msp: build/.cryptogen
 	@mkdir -p $@
-	cp -R $(CRYPTO_PATH) $@
+	cp -R $(CRYPTO_PATH)/* $@
 
+.PRECIOUS: %/tls
 %/tls: build/.cryptogen
 	@mkdir -p $@
 	cp $(CRYPTO_PATH)/keystore/* $@/peer.key
