@@ -59,7 +59,7 @@ build/nodes/peer%: CRYPTO_PATH=$(PEER_PATH)
 	cp $(CRYPTO_PATH)/keystore/* $@/server.key
 	cp $(CRYPTO_PATH)/signcerts/* $@/server.crt
 
-.PRECIOUS: %/tls
+.PRECIOUS: %/tls/ca.crt
 %/tls/ca.crt: build/.cryptogen
 	@mkdir -p ${@D}
 	cp $(CRYPTO_PATH)/cacerts/* $@
