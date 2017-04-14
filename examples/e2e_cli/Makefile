@@ -3,7 +3,9 @@ all: e2e
 NODES += $(patsubst %,peerOrg1Peer%,$(shell seq 1 4))
 NODES += orderer
 
-PEER_PATH = build/crypto-config/peerOrganizations/peerOrg1/peers
+CRYPTO_PATH = build/crypto-config
+ORDERER_PATH = $(CRYPTO_PATH)/ordererOrganizations/ordererOrg1/orderers/ordererOrg1Orderer1
+PEER_PATH = $(CRYPTO_PATH)/peerOrganizations/peerOrg1/peers
 
 e2e: $(patsubst %,build/nodes/%,$(NODES))
 
@@ -19,7 +21,7 @@ build/nodes/%.yaml:
 	@mkdir -p ${@D}
 	cp ${@F} $@
 
-build/nodes/orderer: build/.cryptogen
+build/nodes/orderer: build/.cryptogen build/nodes/orderer/configtx.yaml build/nodes/orderer/orderer.yaml
 	@echo $@
 	@mkdir -p $@
 
