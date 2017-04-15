@@ -82,6 +82,8 @@ func TestEnvInnerVar(t *testing.T) {
 	}
 }
 
+const DummyPath = "/dummy/path"
+
 func TestKafkaTLSConfig(t *testing.T) {
 	testCases := []struct {
 		name        string
@@ -97,9 +99,9 @@ func TestKafkaTLSConfig(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			uconf := &TopLevel{Kafka: Kafka{TLS: tc.tls}}
 			if tc.shouldPanic {
-				assert.Panics(t, func() { uconf.completeInitialization() }, "should panic")
+				assert.Panics(t, func() { uconf.completeInitialization(DummyPath) }, "should panic")
 			} else {
-				assert.NotPanics(t, func() { uconf.completeInitialization() }, "should not panic")
+				assert.NotPanics(t, func() { uconf.completeInitialization(DummyPath) }, "should not panic")
 			}
 		})
 	}
