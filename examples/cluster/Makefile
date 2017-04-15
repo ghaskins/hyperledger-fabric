@@ -12,10 +12,10 @@ PEER_PATH = $(BASECRYPTO_PATH)/peerOrganizations/peerOrg1/peers
 PROFILE=SingleOrg
 
 cluster: $(patsubst %,build/nodes/%,$(NODES))
-	docker-compose up
+	@docker-compose up
 
 build/.cryptogen:
-	mkdir -p ${@D}
+	@mkdir -p ${@D}
 	cryptogen -baseDir ${@D} -ordererNodes 1 -peerOrgs 1 -peersPerOrg 4
 
 .PRECIOUS: %.yaml
