@@ -5,6 +5,7 @@ services:
   orderer0:
     container_name: orderer0
     image: hyperledger/fabric-orderer
+    dns_search: .
     volumes:
       - ./build/nodes/orderer:/etc/hyperledger/fabric
     ports:
@@ -18,6 +19,7 @@ services:
     environment:
       - CORE_PEER_ID=peer1
       - CORE_PEER_ADDRESS=peer1:7051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer1:7051
     volumes:
         - ./build/nodes/peer1:/etc/hyperledger/fabric
     ports:
