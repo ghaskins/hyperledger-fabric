@@ -20,8 +20,8 @@ build/.cryptogen: build
 	cryptogen -baseDir ${@D} -ordererNodes 1 -peerOrgs 1 -peersPerOrg 4
 	@touch $@
 
-.PRECIOUS: build/nodes/%.yaml
-build/nodes/%.yaml:
+.PRECIOUS: %.yaml
+%.yaml:
 	@mkdir -p ${@D}
 	cp ${@F} $@
 
