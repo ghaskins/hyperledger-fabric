@@ -11,7 +11,6 @@ services:
       - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=e2ecli_default
       #- CORE_LOGGING_LEVEL=ERROR
       - CORE_LOGGING_LEVEL=DEBUG
-      - CORE_PEER_TLS_ENABLED=true
       - CORE_NEXT=true
       - CORE_PEER_ENDORSER_ENABLED=true
       - CORE_PEER_GOSSIP_USELEADERELECTION=true
@@ -20,4 +19,6 @@ services:
       # are not doing mutual TLS
       - CORE_PEER_GOSSIP_SKIPHANDSHAKE=true
       - CORE_PEER_PROFILE_ENABLED=true
+    volumes:
+      - /var/run/:/host/var/run/
     command: peer node start --peer-defaultchain=false

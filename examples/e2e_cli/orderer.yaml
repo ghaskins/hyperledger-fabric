@@ -34,7 +34,7 @@ General:
 
     # Log Level: The level at which to log. This accepts logging specifications
     # per: fabric/docs/Setup/logging-control.md
-    LogLevel: info
+    LogLevel: debug
 
     # Genesis method: The method by which to retrieve/generate the genesis
     # block. Available values are "provisional", "file". Provisional utilizes
@@ -61,7 +61,7 @@ General:
     # manager. IMPORTANT: Deployers need to change the value of the localMspId
     # string. In particular, the name of the local MSP ID of an orderer needs to
     # match the name of one of the MSPs in the ordering system channel.
-    LocalMSPID: DEFAULT
+    LocalMSPID: OrdererMSP
 
     # Enable an HTTP service for Go "pprof" profiling as documented at:
     # https://golang.org/pkg/net/http/pprof
