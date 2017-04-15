@@ -46,9 +46,7 @@ build/nodes/peer2: CRYPTO_PATH=$(PEER_PATH)/peerOrg1Peer2
 build/nodes/peer3: CRYPTO_PATH=$(PEER_PATH)/peerOrg1Peer3
 build/nodes/peer4: CRYPTO_PATH=$(PEER_PATH)/peerOrg1Peer4
 
-build/nodes/peer%: build/nodes/peer%/core.yaml
-
-build/nodes/%: build/nodes/%/msp build/nodes/%/tls build/nodes/%/configtx.yaml
+build/nodes/%: build/nodes/%/msp build/nodes/%/tls build/nodes/%/configtx.yaml build/nodes/%/core.yaml
 	@echo "Built $@"
 
 .PRECIOUS: %/msp
