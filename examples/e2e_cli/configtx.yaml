@@ -9,7 +9,7 @@
 ################################################################################
 Profiles:
 
-    SingleOrg:
+    TwoOrgs:
         Orderer:
             <<: *OrdererDefaults
             Organizations:
@@ -18,6 +18,7 @@ Profiles:
             <<: *ApplicationDefaults
             Organizations:
                 - *Org0
+                - *Org1
 
 ################################################################################
 #
@@ -40,7 +41,7 @@ Organizations:
         ID: OrdererMSP
 
         # MSPDir is the filesystem path which contains the MSP configuration
-        MSPDir: msp
+        MSPDir: examples/e2e_cli/crypto/orderer/localMspConfig
 
         # BCCSP (Blockchain crypto provider): Select which crypto implementation or
         # library to use
@@ -62,7 +63,7 @@ Organizations:
         # ID to load the MSP definition as
         ID: Org0MSP
 
-        MSPDir: msp
+        MSPDir: examples/e2e_cli/crypto/peer/peer0/localMspConfig
 
         # BCCSP (Blockchain crypto provider): Select which crypto implementation or
         # library to use
@@ -81,6 +82,35 @@ Organizations:
             # for cross org gossip communication.  Note, this value is only
             # encoded in the genesis block in the Application section context
             - Host: peer0
+              Port: 7051
+
+    - &Org1
+        # DefaultOrg defines the organization which is used in the sampleconfig
+        # of the fabric.git development environment
+        Name: Org1MSP
+
+        # ID to load the MSP definition as
+        ID: Org1MSP
+
+        MSPDir: examples/e2e_cli/crypto/peer/peer2/localMspConfig
+
+        # BCCSP (Blockchain crypto provider): Select which crypto implementation or
+        # library to use
+        BCCSP:
+            Default: SW
+            SW:
+                Hash: SHA2
+                Security: 256
+                # Location of Key Store. If this is unset, a location will
+                # be chosen using 'MSPDir'/keystore
+                FileKeyStore:
+                    KeyStore:
+
+        AnchorPeers:
+            # AnchorPeers defines the location of peers which can be used
+            # for cross org gossip communication.  Note, this value is only
+            # encoded in the genesis block in the Application section context
+            - Host: peer2
               Port: 7051
 
 ################################################################################
