@@ -35,9 +35,6 @@ build/nodes/%.yaml:
 		-outputCreateChannelTx $@ \
 		-channelID ${CHANNEL_NAME}
 
-build/nodes/%: build/nodes/%/msp build/nodes/%/tls build/nodes/%/configtx.yaml
-	@echo "Built $@"
-
 build/nodes/orderer: build/nodes/orderer/orderer.yaml
 build/nodes/orderer: build/nodes/orderer/genesis.block
 build/nodes/orderer: build/nodes/orderer/channel.tx
@@ -50,6 +47,9 @@ build/nodes/peer3: CRYPTO_PATH=$(PEER_PATH)/peerOrg1Peer3
 build/nodes/peer4: CRYPTO_PATH=$(PEER_PATH)/peerOrg1Peer4
 
 build/nodes/peer%: build/nodes/peer%/core.yaml
+
+build/nodes/%: build/nodes/%/msp build/nodes/%/tls build/nodes/%/configtx.yaml
+	@echo "Built $@"
 
 .PRECIOUS: %/msp
 %/msp: build/.cryptogen
