@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric/common/viperutil"
+	cf "github.com/hyperledger/fabric/core/config"
 
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -39,7 +40,7 @@ func TestGoodConfig(t *testing.T) {
 func TestBadConfig(t *testing.T) {
 	config := viper.New()
 	config.SetConfigName("orderer")
-	config.AddConfigPath("../")
+	cf.AddDevConfigPath(config)
 
 	err := config.ReadInConfig()
 	if err != nil {
