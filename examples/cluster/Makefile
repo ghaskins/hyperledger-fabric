@@ -33,16 +33,16 @@ build/.cryptogen:
 		-outputCreateChannelTx $@ \
 		-channelID ${CHANNEL_NAME}
 
-%/orderer: %/orderer/orderer.yaml
-%/orderer: %/orderer/genesis.block
-%/orderer: %/orderer/channel.tx
-%/orderer: %/orderer/tls/ca.crt
-%/orderer: CRYPTO_PATH=$(ORDERER_PATH)
+build/nodes/orderer: build/nodes/orderer/orderer.yaml
+build/nodes/orderer: build/nodes/orderer/genesis.block
+build/nodes/orderer: build/nodes/orderer/channel.tx
+build/nodes/orderer: build/nodes/orderer/tls/ca.crt
+build/nodes/orderer: CRYPTO_PATH=$(ORDERER_PATH)
 
-%/peer1: CRYPTO_PATH=$(PEER_PATH)/peerOrg1Peer1
-%/peer2: CRYPTO_PATH=$(PEER_PATH)/peerOrg1Peer2
-%/peer3: CRYPTO_PATH=$(PEER_PATH)/peerOrg1Peer3
-%/peer4: CRYPTO_PATH=$(PEER_PATH)/peerOrg1Peer4
+build/nodes/peer1: CRYPTO_PATH=$(PEER_PATH)/peerOrg1Peer1
+build/nodes/peer2: CRYPTO_PATH=$(PEER_PATH)/peerOrg1Peer2
+build/nodes/peer3: CRYPTO_PATH=$(PEER_PATH)/peerOrg1Peer3
+build/nodes/peer4: CRYPTO_PATH=$(PEER_PATH)/peerOrg1Peer4
 
 build/nodes/%: build/nodes/%/msp build/nodes/%/tls build/nodes/%/configtx.yaml build/nodes/%/core.yaml
 	@echo "Built $@"
