@@ -196,7 +196,7 @@ peer:
 
     # TLS Settings for p2p communications
     tls:
-        enabled:  true
+        enabled:  false
         cert:
             file: tls/server.crt
         key:
