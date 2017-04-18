@@ -36,7 +36,6 @@ build/.cryptogen:
 build/nodes/orderer: build/nodes/orderer/orderer.yaml
 build/nodes/orderer: build/nodes/orderer/genesis.block
 build/nodes/orderer: build/nodes/orderer/channel.tx
-build/nodes/orderer: build/nodes/orderer/tls/ca.crt
 build/nodes/orderer: CRYPTO_PATH=$(ORDERER_PATH)
 
 build/nodes/peer1: CRYPTO_PATH=$(PEER_PATH)/peerOrg1Peer1
@@ -57,11 +56,7 @@ build/nodes/%: build/nodes/%/msp build/nodes/%/tls build/nodes/%/configtx.yaml b
 	@mkdir -p $@
 	cp $(CRYPTO_PATH)/keystore/* $@/server.key
 	cp $(CRYPTO_PATH)/signcerts/* $@/server.crt
-
-.PRECIOUS: %/tls/ca.crt
-%/tls/ca.crt: build/.cryptogen
-	@mkdir -p ${@D}
-	cp $(CRYPTO_PATH)/cacerts/* $@
+	cp $(CRYPTO_PATH)/cacerts/* $@/ca.crt
 
 clean:
 	docker-compose down
