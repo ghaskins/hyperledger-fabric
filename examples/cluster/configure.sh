@@ -17,3 +17,4 @@ echo "orderer0:" $orderer
 echo "peer1:" $peer
 
 peer channel create -o $orderer:7050 -c $CHANNEL_NAME -f $CHANNEL_SPEC
+peer channel join -b $CHANNEL_NAME.block
