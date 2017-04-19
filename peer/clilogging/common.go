@@ -18,8 +18,8 @@ package clilogging
 
 import (
 	"github.com/hyperledger/fabric/core/errors"
+	"github.com/hyperledger/fabric/peer/common"
 
-	"github.com/op/go-logging"
 	"github.com/spf13/cobra"
 )
 
@@ -27,13 +27,13 @@ func checkLoggingCmdParams(cmd *cobra.Command, args []string) error {
 	var err error
 	if cmd.Name() == "revertlevels" {
 		if len(args) > 0 {
-			err = errors.ErrorWithCallstack("Logging", "ExtraParameters", "More parameters than necessary were provided. Expected 0, received %d.", len(args))
+			err = errors.ErrorWithCallstack("LOG", "400", "More parameters than necessary were provided. Expected 0, received %d.", len(args))
 			return err
 		}
 	} else {
 		// check that at least one parameter is passed in
 		if len(args) == 0 {
-			err = errors.ErrorWithCallstack("Logging", "NoParameters", "No parameters provided.")
+			err = errors.ErrorWithCallstack("LOG", "400", "No parameters provided.")
 			return err
 		}
 	}
@@ -41,13 +41,10 @@ func checkLoggingCmdParams(cmd *cobra.Command, args []string) error {
 	if cmd.Name() == "setlevel" {
 		// check that log level parameter is provided
 		if len(args) == 1 {
-			err = errors.ErrorWithCallstack("Logging", "NoLevelParameter", "No log level provided.")
+			err = errors.ErrorWithCallstack("LOG", "400", "No log level provided.")
 		} else {
 			// check that log level is valid. if not, err is set
-			_, err = logging.LogLevel(args[1])
-			if err != nil {
-				err = errors.ErrorWithCallstack("Logging", "InvalidLevel", "Invalid log level provided - %s", args[1])
-			}
+			err = common.CheckLogLevel(args[1])
 		}
 	}
 

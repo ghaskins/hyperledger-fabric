@@ -27,6 +27,7 @@ import (
 	"github.com/hyperledger/fabric/msp"
 	mspmgmt "github.com/hyperledger/fabric/msp/mgmt"
 	pb "github.com/hyperledger/fabric/protos/peer"
+	logging "github.com/op/go-logging"
 	"github.com/spf13/viper"
 )
 
@@ -66,7 +67,7 @@ func InitCrypto(mspMgrConfigDir string, localMSPID string) error {
 func GetEndorserClient() (pb.EndorserClient, error) {
 	clientConn, err := peer.NewPeerClientConnection()
 	if err != nil {
-		err = errors.ErrorWithCallstack("Peer", "ConnectionError", "Error trying to connect to local peer: %s", err.Error())
+		err = errors.ErrorWithCallstack("PER", "404", "Error trying to connect to local peer").WrapError(err)
 		return nil, err
 	}
 	endorserClient := pb.NewEndorserClient(clientConn)
@@ -77,7 +78,7 @@ func GetEndorserClient() (pb.EndorserClient, error) {
 func GetAdminClient() (pb.AdminClient, error) {
 	clientConn, err := peer.NewPeerClientConnection()
 	if err != nil {
-		err = errors.ErrorWithCallstack("Peer", "ConnectionError", "Error trying to connect to local peer: %s", err.Error())
+		err = errors.ErrorWithCallstack("PER", "404", "Error trying to connect to local peer").WrapError(err)
 		return nil, err
 	}
 	adminClient := pb.NewAdminClient(clientConn)
@@ -90,7 +91,27 @@ func SetLogLevelFromViper(module string) error {
 	var err error
 	if module != "" {
 		logLevelFromViper := viper.GetString("logging." + module)
+		err = CheckLogLevel(logLevelFromViper)
+		if err != nil {
+			if module == "error" {
+				// if 'logging.error' not found in core.yaml or an invalid level has
+				// been entered, set default to debug to ensure the callstack is
+				// appended to all CallStackErrors
+				logLevelFromViper = "debug"
+			} else {
+				return err
+			}
+		}
 		_, err = flogging.SetModuleLevel(module, logLevelFromViper)
+	}
+	return err
+}
+
+// CheckLogLevel checks that a given log level string is valid
+func CheckLogLevel(level string) error {
+	_, err := logging.LogLevel(level)
+	if err != nil {
+		err = errors.ErrorWithCallstack("LOG", "400", "Invalid log level provided - %s", level)
 	}
 	return err
 }
