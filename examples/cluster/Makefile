@@ -1,16 +1,16 @@
 all: cluster
 
-NODES += $(patsubst %,peer%,$(shell seq 1 4))
+NODES += $(patsubst %,peer%.org1,$(shell seq 1 4))
 NODES += orderer
 NODES += cli
 
 CHANNEL_NAME ?= mychannel
 
-BASECRYPTO_PATH = build/crypto-config
-BASEPEER_PATH= $(BASECRYPTO_PATH)/peerOrganizations/peerOrg1
-ORDERER_PATH = $(BASECRYPTO_PATH)/ordererOrganizations/ordererOrg1/orderers/ordererOrg1Orderer1
+BASECRYPTO_PATH = build/cryptogen
+BASEPEER_PATH= $(BASECRYPTO_PATH)/peerOrganizations/org1
+ORDERER_PATH = $(BASECRYPTO_PATH)/ordererOrganizations/orderer/orderers/primary.orderer
 PEER_PATH = $(BASEPEER_PATH)/peers
-CLI_PATH = $(BASEPEER_PATH)/users/peerOrg1Admin
+CLI_PATH = $(BASEPEER_PATH)/users/Admin@org1
 
 PROFILE=SingleOrg
 
@@ -22,9 +22,10 @@ cluster: nodes
 
 nodes: $(patsubst %,build/nodes/%,$(NODES))
 
-build/.cryptogen:
-	@mkdir -p ${@D}
-	cryptogen -baseDir ${@D} -ordererNodes 1 -peerOrgs 1 -peersPerOrg 4
+build/.cryptogen: cryptogen.yaml
+	mkdir -p ${@D}
+	cryptogen generate --config cryptogen.yaml --output $(BASECRYPTO_PATH)
+	touch $@
 
 .PRECIOUS: %.yaml
 %.yaml:
@@ -45,10 +46,10 @@ build/nodes/orderer: build/nodes/orderer/orderer.yaml
 build/nodes/orderer: build/nodes/orderer/genesis.block
 build/nodes/orderer: CRYPTO_PATH=$(ORDERER_PATH)
 
-build/nodes/peer1: CRYPTO_PATH=$(PEER_PATH)/peerOrg1Peer1
-build/nodes/peer2: CRYPTO_PATH=$(PEER_PATH)/peerOrg1Peer2
-build/nodes/peer3: CRYPTO_PATH=$(PEER_PATH)/peerOrg1Peer3
-build/nodes/peer4: CRYPTO_PATH=$(PEER_PATH)/peerOrg1Peer4
+build/nodes/peer1.org1: CRYPTO_PATH=$(PEER_PATH)/peer1.org1
+build/nodes/peer2.org1: CRYPTO_PATH=$(PEER_PATH)/peer2.org1
+build/nodes/peer3.org1: CRYPTO_PATH=$(PEER_PATH)/peer3.org1
+build/nodes/peer4.org1: CRYPTO_PATH=$(PEER_PATH)/peer4.org1
 
 build/nodes/cli: $(CHANNEL_SPEC)
 build/nodes/cli: CRYPTO_PATH=$(CLI_PATH)
