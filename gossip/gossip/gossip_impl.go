@@ -90,8 +90,10 @@ func NewGossipService(conf *Config, s *grpc.Server, secAdvisor api.SecurityAdvis
 		return nil
 	}
 
+	stateInfoExpirationInterval := conf.PublishStateInfoInterval * 100
+
 	g := &gossipServiceImpl{
-		stateInfoMsgStore:     channel.NewStateInfoMessageStore(),
+		stateInfoMsgStore:     channel.NewStateInfoMessageStore(stateInfoExpirationInterval),
 		selfOrg:               secAdvisor.OrgByPeerIdentity(selfIdentity),
 		secAdvisor:            secAdvisor,
 		selfIdentity:          selfIdentity,
@@ -174,6 +176,14 @@ func (g *gossipServiceImpl) JoinChan(joinMsg api.JoinChannelMessage, chainID com
 
 	for _, org := range joinMsg.Members() {
 		g.learnAnchorPeers(org, joinMsg.AnchorPeersOf(org))
+	}
+}
+
+// SuspectPeers makes the gossip instance validate identities of suspected peers, and close
+// any connections to peers with identities that are found invalid
+func (g *gossipServiceImpl) SuspectPeers(isSuspected api.PeerSuspector) {
+	for _, pkiID := range g.certStore.listRevokedPeers(isSuspected) {
+		g.comm.CloseConn(&comm.RemotePeer{PKIID: pkiID})
 	}
 }
 
@@ -633,6 +643,7 @@ func (g *gossipServiceImpl) Stop() {
 	g.toDieChan <- struct{}{}
 	g.emitter.Stop()
 	g.ChannelDeMultiplexer.Close()
+	g.stateInfoMsgStore.Stop()
 	g.stopSignal.Wait()
 	comWG.Wait()
 }

@@ -179,11 +179,12 @@ var (
 func main() {
 	kingpin.Version("0.0.1")
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
-	// Register user
+
+	// "generate" command
 	case gen.FullCommand():
 		generate()
 
-	// Post message
+	// "showtemplate" command
 	case showtemplate.FullCommand():
 		fmt.Print(defaultConfig)
 		os.Exit(0)
@@ -347,14 +348,6 @@ func generatePeerOrg(baseDir string, orgSpec OrgSpec) {
 			orgName, err)
 		os.Exit(1)
 	}
-}
-
-func getOrgNames(baseName string, count int) []string {
-	orgNames := []string{}
-	for i := 1; i <= count; i++ {
-		orgNames = append(orgNames, fmt.Sprintf("%s%d", baseName, i))
-	}
-	return orgNames
 }
 
 func copyAdminCert(usersDir, adminCertsDir, adminUserName string) error {

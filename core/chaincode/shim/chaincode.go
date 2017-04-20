@@ -19,8 +19,6 @@ limitations under the License.
 package shim
 
 import (
-	"bytes"
-	"encoding/gob"
 	"errors"
 	"flag"
 	"fmt"
@@ -35,7 +33,7 @@ import (
 	"github.com/hyperledger/fabric/common/flogging"
 	commonledger "github.com/hyperledger/fabric/common/ledger"
 	"github.com/hyperledger/fabric/core/comm"
-	"github.com/hyperledger/fabric/core/ledger"
+	"github.com/hyperledger/fabric/protos/ledger/queryresult"
 	pb "github.com/hyperledger/fabric/protos/peer"
 	"github.com/hyperledger/fabric/protos/utils"
 	"github.com/op/go-logging"
@@ -489,14 +487,20 @@ func getStateByPartialCompositeKey(stub ChaincodeStubInterface, objectType strin
 	return keysIter, nil
 }
 
-func (iter *StateQueryIterator) Next() (*ledger.KV, error) {
+func (iter *StateQueryIterator) Next() (*queryresult.KV, error) {
 	result, err := next(iter.CommonIterator, STATE_QUERY_RESULT)
-	return result.(*ledger.KV), err
+	if err != nil {
+		return nil, err
+	}
+	return result.(*queryresult.KV), err
 }
 
-func (iter *HistoryQueryIterator) Next() (*ledger.KeyModification, error) {
+func (iter *HistoryQueryIterator) Next() (*queryresult.KeyModification, error) {
 	result, err := next(iter.CommonIterator, HISTORY_QUERY_RESULT)
-	return result.(*ledger.KeyModification), err
+	if err != nil {
+		return nil, err
+	}
+	return result.(*queryresult.KeyModification), err
 }
 
 // HasNext returns true if the range query iterator contains additional keys
@@ -508,26 +512,28 @@ func (iter *CommonIterator) HasNext() bool {
 	return false
 }
 
+// getResultsFromBytes deserializes QueryResult and return either a KV struct
+// or KeyModification depending on the result type (i.e., state (range/execute)
+// query, history query). Note that commonledger.QueryResult is an empty golang
+// interface that can hold values of any type.
 func getResultFromBytes(queryResultBytes *pb.QueryResultBytes, iter *CommonIterator,
 	rType resultType) (commonledger.QueryResult, error) {
 
-	decoder := gob.NewDecoder(bytes.NewBuffer(queryResultBytes.ResultBytes))
-
 	if rType == STATE_QUERY_RESULT {
-		var stateQueryResult ledger.KV
-		if err := decoder.Decode(&stateQueryResult); err != nil {
+		stateQueryResult := &queryresult.KV{}
+		if err := proto.Unmarshal(queryResultBytes.ResultBytes, stateQueryResult); err != nil {
 			return nil, err
 		}
 		iter.currentLoc++
-		return &stateQueryResult, nil
+		return stateQueryResult, nil
 
 	} else if rType == HISTORY_QUERY_RESULT {
-		var historyQueryResult ledger.KeyModification
-		if err := decoder.Decode(&historyQueryResult); err != nil {
+		historyQueryResult := &queryresult.KeyModification{}
+		if err := proto.Unmarshal(queryResultBytes.ResultBytes, historyQueryResult); err != nil {
 			return nil, err
 		}
 		iter.currentLoc++
-		return &historyQueryResult, nil
+		return historyQueryResult, nil
 
 	}
 	return nil, errors.New("Wrong result type")
@@ -545,7 +551,9 @@ func fetchRemainingQueryResult(iter *CommonIterator) error {
 	return nil
 }
 
-// Next returns the next key and value in the state or history query iterator.
+// next returns the next QueryResult (i.e., either a KV struct or KeyModificationin)
+// from the state or history query iterator. Note that commonledger.QueryResult is an
+// empty golang interface that can hold values of any type.
 func next(iter *CommonIterator, rType resultType) (commonledger.QueryResult, error) {
 
 	if iter.currentLoc < len(iter.response.Results) {

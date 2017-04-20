@@ -35,6 +35,7 @@ import (
 	"github.com/hyperledger/fabric/core/committer/txvalidator"
 	"github.com/hyperledger/fabric/core/ledger"
 	"github.com/hyperledger/fabric/core/ledger/ledgermgmt"
+	"github.com/hyperledger/fabric/gossip/api"
 	"github.com/hyperledger/fabric/gossip/service"
 	"github.com/hyperledger/fabric/msp"
 	mspmgmt "github.com/hyperledger/fabric/msp/mgmt"
@@ -191,6 +192,13 @@ func createChain(cid string, ledger ledger.PeerLedger, cb *common.Block) error {
 			Manager:     cm,
 			Application: configtxInitializer.ApplicationConfig(),
 		})
+		service.GetGossipService().SuspectPeers(func(identity api.PeerIdentityType) bool {
+			// TODO: this is a place-holder that would somehow make the MSP layer suspect
+			// that a given certificate is revoked, or its intermediate CA is revoked.
+			// In the meantime, before we have such an ability, we return true in order
+			// to suspect ALL identities in order to validate all of them.
+			return true
+		})
 	}
 
 	trustedRootsCallbackWrapper := func(cm configtxapi.Manager) {
@@ -256,21 +264,33 @@ func MockCreateChain(cid string) error {
 		return err
 	}
 
-	i := mockconfigtx.Initializer{
+	chains.Lock()
+	defer chains.Unlock()
+
+	// Here we need to mock also the policy manager
+	// in order for the ACL to be checked
+	initializer := mockconfigtx.Initializer{
 		Resources: mockconfigtx.Resources{
 			PolicyManagerVal: &mockpolicies.Manager{
 				Policy: &mockpolicies.Policy{},
 			},
 		},
+		PolicyProposerVal: &mockconfigtx.PolicyProposer{
+			Transactional: mockconfigtx.Transactional{},
+		},
+		ValueProposerVal: &mockconfigtx.ValueProposer{
+			Transactional: mockconfigtx.Transactional{},
+		},
 	}
 
-	chains.Lock()
-	defer chains.Unlock()
+	manager := &mockconfigtx.Manager{
+		Initializer: initializer,
+	}
+
 	chains.list[cid] = &chain{
 		cs: &chainSupport{
-			ledger:  ledger,
-			Manager: &mockconfigtx.Manager{Initializer: i},
-		},
+			Manager: manager,
+			ledger:  ledger},
 	}
 
 	return nil
