@@ -6,19 +6,13 @@ set -e
 CHANNEL_NAME=$1
 CHANNEL_SPEC=$2
 
-dockerip () {
-    docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $1 | head -n1
-}
+PEERCMD="docker-compose run --rm cli peer"
 
-ORDERER=$(dockerip primary.orderer)
-
-echo "ORDERER:" $ORDERER
-
-peer channel create \
-     -o $ORDERER:7050 \
+$PEERCMD channel create \
+     -o primary.orderer:7050 \
      -c $CHANNEL_NAME \
      -f $CHANNEL_SPEC \
      --tls true \
      --cafile build/cryptogen/ordererOrganizations/orderer/ca/orderer-cert.pem
 
-peer channel join -b $CHANNEL_NAME.block
+$PEERCMD channel join -b $CHANNEL_NAME.block

@@ -84,3 +84,10 @@ services:
     depends_on:
       - primary.orderer
       - peer1.org1
+
+  cli:
+    image: hyperledger/fabric-peer
+    dns_search: .
+    volumes:
+      - .:/cli
+    working_dir: /cli
