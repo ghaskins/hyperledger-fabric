@@ -14,5 +14,11 @@ orderer=$(dockerip primary.orderer)
 
 echo "orderer0:" $orderer
 
-peer channel create -o $orderer:7050 -c $CHANNEL_NAME -f $CHANNEL_SPEC
+peer channel create \
+     -o $orderer:7050 \
+     -c $CHANNEL_NAME \
+     -f $CHANNEL_SPEC \
+     --tls true \
+     --cafile build/cryptogen/ordererOrganizations/orderer/ca/orderer-cert.pem
+
 peer channel join -b $CHANNEL_NAME.block
