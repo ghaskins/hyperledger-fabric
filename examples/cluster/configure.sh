@@ -10,12 +10,12 @@ dockerip () {
     docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $1 | head -n1
 }
 
-orderer=$(dockerip primary.orderer)
+ORDERER=$(dockerip primary.orderer)
 
-echo "orderer0:" $orderer
+echo "ORDERER:" $ORDERER
 
 peer channel create \
-     -o $orderer:7050 \
+     -o $ORDERER:7050 \
      -c $CHANNEL_NAME \
      -f $CHANNEL_SPEC \
      --tls true \

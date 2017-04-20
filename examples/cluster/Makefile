@@ -7,10 +7,12 @@ NODES += cli
 CHANNEL_NAME ?= mychannel
 
 BASECRYPTO_PATH = build/cryptogen
+BASEORDERER_PATH = $(BASECRYPTO_PATH)/ordererOrganizations/orderer
 BASEPEER_PATH= $(BASECRYPTO_PATH)/peerOrganizations/org1
-ORDERER_PATH = $(BASECRYPTO_PATH)/ordererOrganizations/orderer/orderers/primary.orderer
+
+ORDERER_PATH = $(BASEORDERER_PATH)/orderers/primary.orderer
 PEER_PATH = $(BASEPEER_PATH)/peers
-CLI_PATH = $(BASEPEER_PATH)/users/Admin@org1
+CLI_PATH = $(BASEORDERER_PATH)/users/Admin@orderer
 
 PROFILE=SingleOrg
 
