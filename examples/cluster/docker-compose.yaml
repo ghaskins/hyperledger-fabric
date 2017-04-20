@@ -89,5 +89,6 @@ services:
     image: hyperledger/fabric-peer
     dns_search: .
     volumes:
+      - ./build/nodes/cli:/etc/hyperledger/fabric
       - .:/cli
     working_dir: /cli
