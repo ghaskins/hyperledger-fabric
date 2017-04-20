@@ -20,28 +20,30 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"gopkg.in/yaml.v2"
 	"text/template"
+
+	"gopkg.in/yaml.v2"
 
 	"gopkg.in/alecthomas/kingpin.v2"
 
-	"github.com/hyperledger/fabric/common/tools/cryptogen/ca"
-	"github.com/hyperledger/fabric/common/tools/cryptogen/msp"
 	"bytes"
 	"io/ioutil"
+
+	"github.com/hyperledger/fabric/common/tools/cryptogen/ca"
+	"github.com/hyperledger/fabric/common/tools/cryptogen/msp"
 )
 
 const (
-	userBaseName       = "User"
-	adminBaseName      = "Admin"
+	userBaseName            = "User"
+	adminBaseName           = "Admin"
 	defaultHostnameTemplate = "{{.Prefix}}{{.Index}}"
-	defaultCNTemplate = "{{.Hostname}}.{{.Domain}}"
+	defaultCNTemplate       = "{{.Hostname}}.{{.Domain}}"
 )
 
 type HostnameData struct {
-	Prefix       string
-	Index        int
-	Domain       string
+	Prefix string
+	Index  int
+	Domain string
 }
 
 type CommonNameData struct {
@@ -50,15 +52,15 @@ type CommonNameData struct {
 }
 
 type NodeTemplate struct {
-	Count int `yaml:"Count"`
-	Start int `yaml:"Start"`
+	Count    int    `yaml:"Count"`
+	Start    int    `yaml:"Start"`
 	Hostname string `yaml:"Hostname"`
 }
 
 type NodeSpec struct {
-	Hostname     string `yaml:"Hostname"`
+	Hostname     string   `yaml:"Hostname"`
 	AltHostnames []string `yaml:"AltHostnames"`
-	CommonName   string `yaml:"CommonName"`
+	CommonName   string   `yaml:"CommonName"`
 }
 
 type UsersSpec struct {
@@ -66,16 +68,16 @@ type UsersSpec struct {
 }
 
 type OrgSpec struct {
-	Name     string `yaml:"Name"`
-	Domain   string `yaml:"Domain"`
+	Name     string       `yaml:"Name"`
+	Domain   string       `yaml:"Domain"`
 	Template NodeTemplate `yaml:"Template"`
-	Specs    []NodeSpec `yaml:"Specs"`
-	Users    UsersSpec `yaml:"Users"`
+	Specs    []NodeSpec   `yaml:"Specs"`
+	Users    UsersSpec    `yaml:"Users"`
 }
 
 type Config struct {
 	OrdererOrgs []OrgSpec `yaml:"OrdererOrgs"`
-	PeerOrgs []OrgSpec `yaml:"PeerOrgs"`
+	PeerOrgs    []OrgSpec `yaml:"PeerOrgs"`
 }
 
 var defaultConfig = `
@@ -83,9 +85,10 @@ var defaultConfig = `
 # "OrdererOrgs" - Definition of organizations managing orderer nodes
 # ---------------------------------------------------------------------------
 OrdererOrgs:
-  # List any orderers you want to declare here
-  -
-    Name: Orderer
+  # ---------------------------------------------------------------------------
+  # Orderer
+  # ---------------------------------------------------------------------------
+  - Name: Orderer
     Domain: example.com
 
     # ---------------------------------------------------------------------------
@@ -93,15 +96,15 @@ OrdererOrgs:
     # ---------------------------------------------------------------------------
     Specs:
       - Hostname: orderer
-        # CommonName: {{.Hostname}}.{{.Domain}} # default is hostname.domain
 
 # ---------------------------------------------------------------------------
 # "PeerOrgs" - Definition of organizations managing peer nodes
 # ---------------------------------------------------------------------------
 PeerOrgs:
-  # List any peers you want to declare here
-  -
-    Name: Org1
+  # ---------------------------------------------------------------------------
+  # Org1
+  # ---------------------------------------------------------------------------
+  - Name: Org1
     Domain: org1.example.com
 
     # ---------------------------------------------------------------------------
@@ -109,15 +112,27 @@ PeerOrgs:
     # ---------------------------------------------------------------------------
     # Uncomment this section to enable the explicit definition of hosts in your
     # configuration.  Most users will want to use Template, below
+    #
+    # Specs is an array of Spec entries.  Each Spec entry consists of two fields:
+    #   - Hostname:   (Required) The desired hostname, sans the domain.
+    #   - CommonName: (Optional) Specifies the template or explicit override for
+    #                 the CN.  By default, this is the template:
+    #
+    #                              "{{.Hostname}}.{{.Domain}}"
+    #
+    #                 which obtains its values from the Spec.Hostname and
+    #                 Org.Domain, respectively.
     # ---------------------------------------------------------------------------
-    # Specs: # array of specific
+    # Specs:
     #   - Hostname: foo # implicitly "foo.org1.example.com"
-    #     CommonName: bar.org5.example.com # overrides Hostname-based FQDN set above
+    #     CommonName: foo27.org5.example.com # overrides Hostname-based FQDN set above
+    #   - Hostname: bar
+    #   - Hostname: baz
 
     # ---------------------------------------------------------------------------
     # "Template"
     # ---------------------------------------------------------------------------
-    # Allows for the definition of 1 or more hosts that are created sequntially
+    # Allows for the definition of 1 or more hosts that are created sequentially
     # from a template. By default, this looks like "peer%d" from 0 to Count-1.
     # You may override the number of nodes (Count), the starting index (Start)
     # or the template used to construct the name (Hostname).
@@ -134,20 +149,22 @@ PeerOrgs:
     # ---------------------------------------------------------------------------
     # "Users"
     # ---------------------------------------------------------------------------
+    # Count: The number of user accounts _in addition_ to Admin
+    # ---------------------------------------------------------------------------
     Users:
-      Count: 1 # The number of user accounts _in addition_ to Admin
+      Count: 1
 
   # ---------------------------------------------------------------------------
-  # See "Org1" for full specification
+  # Org2: See "Org1" for full specification
   # ---------------------------------------------------------------------------
-  -
-    Name: Org2
+  - Name: Org2
     Domain: org2.example.com
     Template:
       Count: 1
     Users:
       Count: 1
 `
+
 //command line flags
 var (
 	app        = kingpin.New("cryptogen", "Utility for generating Hyperledger Fabric key material")
@@ -250,7 +267,7 @@ func generateNodeSpec(orgSpec *OrgSpec, prefix string) error {
 	for i := 0; i < orgSpec.Template.Count; i++ {
 		data := HostnameData{
 			Prefix: prefix,
-			Index: i + orgSpec.Template.Start,
+			Index:  i + orgSpec.Template.Start,
 			Domain: orgSpec.Domain,
 		}
 
@@ -267,7 +284,7 @@ func generateNodeSpec(orgSpec *OrgSpec, prefix string) error {
 	for idx, spec := range orgSpec.Specs {
 		data := CommonNameData{
 			Hostname: spec.Hostname,
-			Domain: orgSpec.Domain,
+			Domain:   orgSpec.Domain,
 		}
 
 		finalCN, err := parseTemplate(spec.CommonName, defaultCNTemplate, data)
