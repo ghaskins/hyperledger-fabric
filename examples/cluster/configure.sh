@@ -10,7 +10,7 @@ dockerip () {
     docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $1 | head -n1
 }
 
-orderer=$(dockerip orderer)
+orderer=$(dockerip primary.orderer)
 
 echo "orderer0:" $orderer
 

@@ -3,7 +3,6 @@ services:
   peer-base:
     image: hyperledger/fabric-peer
     dns_search: .
-    domainname: org1
     environment:
       - CORE_PEER_ADDRESSAUTODETECT=true
       - CORE_LOGGING_LEVEL=DEBUG
