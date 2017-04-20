@@ -88,7 +88,12 @@ services:
   cli:
     image: hyperledger/fabric-peer
     dns_search: .
+    environment:
+      - CORE_PEER_ADDRESS=peer1.org1:7051
     volumes:
       - ./build/nodes/cli:/etc/hyperledger/fabric
       - .:/cli
     working_dir: /cli
+    depends_on:
+      - primary.orderer
+      - peer1.org1

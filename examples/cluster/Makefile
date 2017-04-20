@@ -21,7 +21,7 @@ CHANNEL_SPEC=build/nodes/cli/channel.tx
 
 cluster: nodes
 	@docker-compose up -d $(PEERS)
-	FABRIC_CFG_PATH=build/nodes/cli ./configure.sh $(CHANNEL_NAME) $(CHANNEL_SPEC)
+	docker-compose run --rm cli ./configure.sh $(CHANNEL_NAME) $(CHANNEL_SPEC)
 
 nodes: $(patsubst %,build/nodes/%,$(NODES))
 
