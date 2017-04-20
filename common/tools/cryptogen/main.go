@@ -167,7 +167,7 @@ PeerOrgs:
 
 //command line flags
 var (
-	app        = kingpin.New("cryptogen", "Utility for generating Hyperledger Fabric key material")
+	app = kingpin.New("cryptogen", "Utility for generating Hyperledger Fabric key material")
 
 	gen        = app.Command("generate", "Generate key material")
 	outputDir  = gen.Flag("output", "The output directory in which to place artifacts").Default("crypto-config").String()
