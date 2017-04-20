@@ -13,7 +13,7 @@ BASEPEER_PATH= $(BASECRYPTO_PATH)/peerOrganizations/org1
 
 ORDERER_PATH = $(BASEORDERER_PATH)/orderers/primary.orderer
 PEER_PATH = $(BASEPEER_PATH)/peers
-CLI_PATH = $(BASEORDERER_PATH)/users/Admin@orderer
+CLI_PATH = $(BASEPEER_PATH)/users/Admin@org1
 
 PROFILE=SingleOrg
 
