@@ -7,9 +7,9 @@ NODES += cli
 
 CHANNEL_NAME ?= mychannel
 
-BASECRYPTO_PATH = build/cryptogen
-ORDERER_ORG = $(BASECRYPTO_PATH)/ordererOrganizations/orderer
-PEER_ORG= $(BASECRYPTO_PATH)/peerOrganizations/org1
+CRYPTOGEN = build/cryptogen
+ORDERER_ORG = $(CRYPTOGEN)/ordererOrganizations/orderer
+PEER_ORG= $(CRYPTOGEN)/peerOrganizations/org1
 
 ORDERER_PATH = $(ORDERER_ORG)/orderers
 PEER_PATH = $(PEER_ORG)/peers
@@ -34,7 +34,7 @@ cluster: nodes
 
 nodes: $(patsubst %,build/nodes/%,$(NODES))
 
-$(BASECRYPTO_PATH): cryptogen.yaml
+$(CRYPTOGEN): cryptogen.yaml
 	@mkdir -p ${@D}
 	cryptogen generate --config $< --output $@
 
@@ -54,7 +54,7 @@ $(BASECRYPTO_PATH): cryptogen.yaml
 		-outputCreateChannelTx $@
 
 .PRECIOUS: %/msp
-%/msp: $(BASECRYPTO_PATH)
+%/msp: $(CRYPTOGEN)
 	$(eval NODE = ${patsubst build/nodes/%/msp,%,${@}})
 	@mkdir -p $@
 	cp -R $(mspmap.${NODE})/* $@
