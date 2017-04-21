@@ -26,9 +26,11 @@ mspmap.peer3.org1 := $(PEER_PATH)/peer3.org1
 mspmap.peer4.org1 := $(PEER_PATH)/peer4.org1
 mspmap.cli        := $(USERS_PATH)/Admin@org1
 
+DRUN=docker-compose run --rm cli
+
 cluster: nodes
 	docker-compose up -d $(PEERS)
-	docker-compose run --rm cli ./configure.sh $(CHANNEL_NAME) $(CHANNEL_SPEC)
+	$(DRUN) ./configure.sh $(CHANNEL_NAME) $(CHANNEL_SPEC)
 
 nodes: $(patsubst %,build/nodes/%,$(NODES))
 
