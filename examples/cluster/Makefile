@@ -32,7 +32,7 @@ cluster: nodes
 
 nodes: $(patsubst %,build/nodes/%,$(NODES))
 
-build/.cryptogen: cryptogen.yaml
+%/.cryptogen: cryptogen.yaml
 	mkdir -p ${@D}
 	cryptogen generate --config cryptogen.yaml --output $(BASECRYPTO_PATH)
 	touch $@
