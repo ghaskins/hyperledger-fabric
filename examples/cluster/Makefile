@@ -27,7 +27,7 @@ mspmap.peer4.org1 := $(PEER_PATH)/peer4.org1
 mspmap.cli        := $(USERS_PATH)/Admin@org1
 
 cluster: nodes
-	@docker-compose up -d $(PEERS)
+	docker-compose up -d $(PEERS)
 	docker-compose run --rm cli ./configure.sh $(CHANNEL_NAME) $(CHANNEL_SPEC)
 
 nodes: $(patsubst %,build/nodes/%,$(NODES))
@@ -48,8 +48,8 @@ $(BASECRYPTO_PATH): cryptogen.yaml
 %/channel.tx: %/configtx.yaml %/msp
 	@mkdir -p ${@D}
 	FABRIC_CFG_PATH=${@D} configtxgen -profile $(PROFILE) \
-		-outputCreateChannelTx $@ \
-		-channelID ${CHANNEL_NAME}
+		-channelID ${CHANNEL_NAME} \
+		-outputCreateChannelTx $@
 
 .PRECIOUS: %/msp
 %/msp: $(BASECRYPTO_PATH)
