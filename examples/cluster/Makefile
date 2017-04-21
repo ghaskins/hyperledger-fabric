@@ -32,10 +32,9 @@ cluster: nodes
 
 nodes: $(patsubst %,build/nodes/%,$(NODES))
 
-%/.cryptogen: cryptogen.yaml
-	mkdir -p ${@D}
-	cryptogen generate --config cryptogen.yaml --output $(BASECRYPTO_PATH)
-	touch $@
+$(BASECRYPTO_PATH): cryptogen.yaml
+	@mkdir -p ${@D}
+	cryptogen generate --config $< --output $@
 
 .PRECIOUS: %.yaml
 %.yaml:
@@ -53,7 +52,7 @@ nodes: $(patsubst %,build/nodes/%,$(NODES))
 		-channelID ${CHANNEL_NAME}
 
 .PRECIOUS: %/msp
-%/msp: build/.cryptogen
+%/msp: $(BASECRYPTO_PATH)
 	$(eval NODE = ${patsubst build/nodes/%/msp,%,${@}})
 	@mkdir -p $@
 	cp -R $(mspmap.${NODE})/* $@
