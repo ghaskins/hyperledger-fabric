@@ -52,13 +52,6 @@ build/.cryptogen: cryptogen.yaml
 		-outputCreateChannelTx $@ \
 		-channelID ${CHANNEL_NAME}
 
-build/nodes/orderer: build/nodes/orderer/orderer.yaml
-build/nodes/orderer: build/nodes/orderer/genesis.block
-build/nodes/cli: $(CHANNEL_SPEC)
-
-build/nodes/%: build/nodes/%/msp build/nodes/%/tls build/nodes/%/configtx.yaml build/nodes/%/core.yaml
-	@echo "Built $@"
-
 .PRECIOUS: %/msp
 %/msp: build/.cryptogen
 	$(eval NODE = ${patsubst build/nodes/%/msp,%,${@}})
@@ -72,6 +65,13 @@ build/nodes/%: build/nodes/%/msp build/nodes/%/tls build/nodes/%/configtx.yaml b
 	cp $(MSP)/keystore/* $@/server.key
 	cp $(MSP)/signcerts/* $@/server.crt
 	cp $(MSP)/cacerts/* $@/ca.crt
+
+build/nodes/orderer: build/nodes/orderer/orderer.yaml
+build/nodes/orderer: build/nodes/orderer/genesis.block
+build/nodes/cli: $(CHANNEL_SPEC)
+
+build/nodes/%: build/nodes/%/msp build/nodes/%/tls build/nodes/%/configtx.yaml build/nodes/%/core.yaml
+	@echo "Built $@"
 
 clean:
 	docker-compose down

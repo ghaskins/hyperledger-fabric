@@ -8,8 +8,6 @@ services:
     dns_search: .
     volumes:
       - ./build/nodes/orderer:/etc/hyperledger/fabric
-    ports:
-      - 7050:7050
 
   peer1.org1:
     container_name: peer1.org1
@@ -22,9 +20,6 @@ services:
       - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer1.org1:7051
     volumes:
         - ./build/nodes/peer1.org1:/etc/hyperledger/fabric
-    ports:
-      - 7051:7051
-      - 7053:7053
     depends_on:
       - primary.orderer
 
@@ -40,9 +35,6 @@ services:
       - CORE_PEER_GOSSIP_BOOTSTRAP=peer1.org1:7051
     volumes:
         - ./build/nodes/peer2.org1:/etc/hyperledger/fabric
-    ports:
-      - 8051:7051
-      - 8053:7053
     depends_on:
       - primary.orderer
       - peer1.org1
@@ -59,9 +51,6 @@ services:
       - CORE_PEER_GOSSIP_BOOTSTRAP=peer1.org1:7051
     volumes:
         - ./build/nodes/peer3.org1:/etc/hyperledger/fabric
-    ports:
-      - 9051:7051
-      - 9053:7053
     depends_on:
       - primary.orderer
       - peer1.org1
@@ -78,9 +67,6 @@ services:
       - CORE_PEER_GOSSIP_BOOTSTRAP=peer1.org1:7051
     volumes:
         - ./build/nodes/peer4.org1:/etc/hyperledger/fabric
-    ports:
-      - 10051:7051
-      - 10053:7053
     depends_on:
       - primary.orderer
       - peer1.org1
