@@ -75,6 +75,8 @@ services:
     image: hyperledger/fabric-peer
     dns_search: .
     environment:
+      - CORE_NEXT=true
+      - CORE_LOGGING_LEVEL=DEBUG
       - CORE_PEER_ADDRESS=peer1.org1:7051
     volumes:
       - ./build/nodes/cli:/etc/hyperledger/fabric
