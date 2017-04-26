@@ -1,0 +1,20 @@
+version: '2'
+services:
+  peer-base:
+    image: hyperledger/fabric-peer
+    dns_search: .
+    environment:
+      - CORE_PEER_ADDRESSAUTODETECT=true
+      - CORE_LOGGING_LEVEL=DEBUG
+      - CORE_NEXT=true
+      - CORE_PEER_ENDORSER_ENABLED=true
+      - CORE_PEER_GOSSIP_USELEADERELECTION=true
+      - CORE_PEER_GOSSIP_ORGLEADER=false
+      # The following setting skips the gossip handshake when we are
+      # are not doing mutual TLS
+      - CORE_PEER_GOSSIP_SKIPHANDSHAKE=true
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer1.org1:7051
+      - CORE_PEER_PROFILE_ENABLED=true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: peer node start --peer-defaultchain=false
