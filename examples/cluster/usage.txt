@@ -1,0 +1,8 @@
+Usage: make [target]
+
+Supported Targets:
+
+- help:    displays this help message
+- compose: builds a docker-compose based cluster
+- all:     builds all cluster types (currently [compose])
+- clean:   cleans local artifacts and, where applicable, destroys cluster
