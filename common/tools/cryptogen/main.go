@@ -372,7 +372,7 @@ func copyAdminCert(usersDir, adminCertsDir, adminUserName string) error {
 	if err != nil {
 		return err
 	}
-	err = copyFile(filepath.Join(usersDir, adminUserName, "signcerts",
+	err = copyFile(filepath.Join(usersDir, adminUserName, "msp", "signcerts",
 		adminUserName+"-cert.pem"), filepath.Join(adminCertsDir,
 		adminUserName+"-cert.pem"))
 	if err != nil {
