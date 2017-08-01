@@ -32,11 +32,14 @@ mspmap.peer3      := $(PEER_PATH)/peer3.org1.net
 mspmap.peer4      := $(PEER_PATH)/peer4.org1.net
 mspmap.cli        := $(USERS_PATH)/Admin@org1.net
 
-COMPOSE=docker-compose -f compose/docker-compose.yaml
+COMPOSE=docker-compose -f build/docker-compose.yaml
 DRUN=$(COMPOSE) run --rm cli
 
+RELEASE ?= latest
+CA_RELEASE ?= $(RELEASE)
+FABRIC_RELEASE ?= $(RELEASE)
+DOCKER_NS ?= hyperledger
 TLS ?= true
-export TLS_ENABLED=$(TLS)
 
 CRYPTOGEN=build/bin/cryptogen
 CONFIGTXGEN=build/bin/configtxgen
@@ -48,15 +51,15 @@ pkgmap.configtxgen    := $(FABRICPKG)/common/configtx/tool/configtxgen
 help:
 	@cat usage.txt
 
-compose-up: nodes
+compose-up: nodes build/docker-compose.yaml
 	@echo "Booting docker-compose environment"
 	$(COMPOSE) up -d $(DAEMONS)
 	$(DRUN) ./configure.sh $(CHANNEL_NAME) "$(CHANNEL_TXNS)" "$(PEERS)" $(TLS)
 	@./compose/report-env.sh "$(DAEMONS)" build/client.config $(TLS)
 
-compose-down:
+compose-down: build/docker-compose.yaml
 	$(COMPOSE) down
-	rm -rf build/nodes $(CRYPTOOUTPUT)
+	-rm -rf build/nodes $(CRYPTOOUTPUT)
 
 nodes: $(patsubst %,build/nodes/%,$(NODES))
 
@@ -117,6 +120,15 @@ build/nodes/tlsca: build/nodes/tlsca/fabric-tlsca-server-config.yaml
 build/nodes/%: build/nodes/%/msp build/nodes/%/configtx.yaml build/nodes/%/core.yaml
 	@echo "Built $@"
 
+build/docker-compose.yaml: compose/docker-compose.yaml.in
+	@mkdir -p $(@D)
+	cat $< \
+		| sed -e 's/_TLS_ENABLED_/${TLS}/g' \
+		| sed -e 's/_DOCKER_NS_/${DOCKER_NS}/g' \
+		| sed -e 's/_CA_RELEASE_/${CA_RELEASE}/g' \
+		| sed -e 's/_FABRIC_RELEASE_/${FABRIC_RELEASE}/g' \
+		> $@
+
 clean: compose-down
-	rm -rf build
-	rm $(CHANNEL_NAME).block
+	-rm -rf build
+	-rm $(CHANNEL_NAME).block
