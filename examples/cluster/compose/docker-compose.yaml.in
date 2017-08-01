@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-version: '2'
+version: '2.1'
 
 services:
 
@@ -58,6 +58,19 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     command: peer node start
 
+  couchdb-base:
+    image: _DOCKER_NS_/fabric-couchdb:_COUCH_RELEASE_
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5984"]
+      interval: 60s
+      timeout: 10s
+      retries: 10
+
+  couchdb1:
+    container_name: couchdb1
+    extends:
+      service: couchdb-base
+
   peer1:
     container_name: peer1
     extends:
@@ -67,12 +80,21 @@ services:
       - CORE_PEER_ADDRESS=peer1:7051
       - CORE_PEER_GOSSIP_ENDPOINT=peer1:7051
       - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer1.org1.net:7051
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb1:5984
     logging:
       <<: *logging
     volumes:
         - ./nodes/peer1:/etc/hyperledger/fabric
     depends_on:
-      - orderer
+      orderer:
+          condition: service_started
+      couchdb1:
+          condition: service_healthy
+
+  couchdb2:
+    container_name: couchdb2
+    extends:
+      service: couchdb-base
 
   peer2:
     container_name: peer2
@@ -83,13 +105,23 @@ services:
       - CORE_PEER_ADDRESS=peer2:7051
       - CORE_PEER_GOSSIP_ENDPOINT=peer2:7051
       - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer2.org1.net:7051
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb2:5984
     logging:
       <<: *logging
     volumes:
         - ./nodes/peer2:/etc/hyperledger/fabric
     depends_on:
-      - orderer
-      - peer1
+      orderer:
+        condition: service_started
+      peer1:
+        condition: service_started
+      couchdb2:
+        condition: service_healthy
+
+  couchdb3:
+    container_name: couchdb3
+    extends:
+      service: couchdb-base
 
   peer3:
     container_name: peer3
@@ -100,13 +132,23 @@ services:
       - CORE_PEER_ADDRESS=peer3:7051
       - CORE_PEER_GOSSIP_ENDPOINT=peer3:7051
       - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer3.org1.net:7051
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb3:5984
     logging:
       <<: *logging
     volumes:
         - ./nodes/peer3:/etc/hyperledger/fabric
     depends_on:
-      - orderer
-      - peer1
+      orderer:
+        condition: service_started
+      peer1:
+        condition: service_started
+      couchdb3:
+        condition: service_healthy
+
+  couchdb4:
+    container_name: couchdb4
+    extends:
+      service: couchdb-base
 
   peer4:
     container_name: peer4
@@ -117,13 +159,18 @@ services:
       - CORE_PEER_ADDRESS=peer4:7051
       - CORE_PEER_GOSSIP_ENDPOINT=peer4:7051
       - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer4.org1.net:7051
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb4:5984
     logging:
       <<: *logging
     volumes:
         - ./nodes/peer4:/etc/hyperledger/fabric
     depends_on:
-      - orderer
-      - peer1
+      orderer:
+        condition: service_started
+      peer1:
+        condition: service_started
+      couchdb4:
+        condition: service_healthy
 
   cli:
     image: _DOCKER_NS_/fabric-peer:_FABRIC_RELEASE_

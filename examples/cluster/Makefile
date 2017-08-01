@@ -37,6 +37,7 @@ DRUN=$(COMPOSE) run --rm cli
 
 RELEASE ?= latest
 CA_RELEASE ?= $(RELEASE)
+COUCH_RELEASE ?= $(RELEASE)
 FABRIC_RELEASE ?= $(RELEASE)
 DOCKER_NS ?= hyperledger
 TLS ?= true
@@ -126,6 +127,7 @@ build/docker-compose.yaml: compose/docker-compose.yaml.in
 		| sed -e 's/_TLS_ENABLED_/${TLS}/g' \
 		| sed -e 's/_DOCKER_NS_/${DOCKER_NS}/g' \
 		| sed -e 's/_CA_RELEASE_/${CA_RELEASE}/g' \
+		| sed -e 's/_COUCH_RELEASE_/${COUCH_RELEASE}/g' \
 		| sed -e 's/_FABRIC_RELEASE_/${FABRIC_RELEASE}/g' \
 		> $@
 
