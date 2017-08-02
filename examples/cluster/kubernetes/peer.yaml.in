@@ -1,0 +1,86 @@
+#
+# Peer_PEERID_
+#
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: peer_PEERID_
+spec:
+  clusterIP: None
+  ports:
+  - name: api
+    port: 7051
+  - name: events
+    port: 7053
+  selector:
+    hyperledger.fabric.service: peer_PEERID_
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    hyperledger.fabric.service: peer_PEERID_
+  name: peer_PEERID_
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        hyperledger.fabric.service: peer_PEERID_
+    spec:
+      containers:
+      - name: couchdb_PEERID_
+        image: _DOCKER_NS_/fabric-couchdb:_FABRIC_RELEASE_
+        volumeMounts:
+        - name: couchdb-data-volume
+          mountPath: /opt/couchdb/data
+        - name: couchdb-log-volume
+          mountPath: /opt/couchdb/logs
+      - name: peer_PEERID_
+        image: _DOCKER_NS_/fabric-peer:_FABRIC_RELEASE_
+        env:
+        - name: CORE_PEER_ID
+          value: peer_PEERID_
+        - name: CORE_PEER_GOSSIP_ENDPOINT
+          value: peer_PEERID_:7051
+        - name: CORE_PEER_GOSSIP_EXTERNAL_ENDPOINT
+          value: peer_PEERID_.org1.net:7051
+        - name: CORE_PEER_TLS_ENABLED
+          value: "_TLS_ENABLED_"
+        - name: CORE_LOGGING_LEVEL
+          value: WARNING
+        - name: CORE_NEXT
+          value: "true"
+        - name: CORE_PEER_GOSSIP_BOOTSTRAP
+          value: peer1:7051
+        args:
+          - sh
+          - -c
+          - tar --no-overwrite-dir -C /etc/hyperledger/fabric -zxvf /secrets/config.tgz && peer node start
+        ports:
+        - containerPort: 7051
+        - containerPort: 7053
+        volumeMounts:
+        - name: config-data
+          mountPath: /secrets
+          readOnly: true
+        - name: config-volume
+          mountPath: /etc/hyperledger/fabric
+        - name: peer-data-volume
+          mountPath: /var/hyperledger
+      restartPolicy: Always
+      volumes:
+      - name: config-data
+        secret:
+          secretName: peer_PEERID_-config
+      - name: config-volume
+        emptyDir: {}
+      - name: peer-data-volume
+        emptyDir: {}
+      - name: couchdb-data-volume
+        emptyDir: {}
+      - name: couchdb-log-volume
+        emptyDir: {}

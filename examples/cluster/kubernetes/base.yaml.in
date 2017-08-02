@@ -1,0 +1,120 @@
+#
+# Certificate Authority
+#
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ca
+spec:
+  clusterIP: None
+  ports:
+  - name: headless
+    port: 7054
+  selector:
+    hyperledger.fabric.service: ca
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    hyperledger.fabric.service: ca
+  name: ca
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        hyperledger.fabric.service: ca
+    spec:
+      containers:
+      - name: ca
+        image: _DOCKER_NS_/fabric-ca:_CA_RELEASE_
+        env:
+        - name: FABRIC_CA_SERVER_TLS_ENABLED
+          value: "_TLS_ENABLED_"
+        args:
+          - sh
+          - -c
+          - tar --no-overwrite-dir -C /etc/hyperledger/fabric-ca-server -zxf /secrets/config.tgz && fabric-ca-server start -b admin:adminpw
+        ports:
+        - containerPort: 7054
+        volumeMounts:
+        - name: config-data
+          mountPath: /secrets
+          readOnly: true
+        - name: config-volume
+          mountPath: /etc/hyperledger/fabric-ca-server
+        - name: data-volume
+          mountPath: /var/hyperledger
+      restartPolicy: Always
+      volumes:
+      - name: config-data
+        secret:
+          secretName: ca-config
+      - name: config-volume
+        emptyDir: {}
+      - name: data-volume
+        emptyDir: {}
+#
+# Orderer
+#
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: orderer
+spec:
+  clusterIP: None
+  ports:
+  - name: headless
+    port: 7050
+  selector:
+    hyperledger.fabric.service: orderer
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    hyperledger.fabric.service: orderer
+  name: orderer
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        hyperledger.fabric.service: orderer
+    spec:
+      containers:
+      - name: orderer
+        image: _DOCKER_NS_/fabric-orderer:_FABRIC_RELEASE_
+        env:
+        - name: ORDERER_GENERAL_TLS_ENABLED
+          value: "_TLS_ENABLED_"
+        args:
+          - sh
+          - -c
+          - tar --no-overwrite-dir -C /etc/hyperledger/fabric -zxf /secrets/config.tgz & orderer
+        ports:
+        - containerPort: 7050
+        volumeMounts:
+        - name: config-data
+          mountPath: /secrets
+          readOnly: true
+        - name: config-volume
+          mountPath: /etc/hyperledger/fabric
+        - name: data-volume
+          mountPath: /var/hyperledger
+      restartPolicy: Always
+      volumes:
+      - name: config-data
+        secret:
+          secretName: orderer-config
+      - name: config-volume
+        emptyDir: {}
+      - name: data-volume
+        emptyDir: {}
