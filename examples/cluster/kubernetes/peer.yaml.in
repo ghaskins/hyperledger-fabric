@@ -1,0 +1,120 @@
+#
+# Peer_PEERID_
+#
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: peer_PEERID_
+spec:
+  clusterIP: None
+  ports:
+  - name: api
+    port: 7051
+  - name: events
+    port: 7053
+  selector:
+    hyperledger.fabric.service: peer_PEERID_
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    hyperledger.fabric.service: peer_PEERID_
+  name: peer_PEERID_
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        hyperledger.fabric.service: peer_PEERID_
+    spec:
+      containers:
+      - name: couchdb_PEERID_
+        image: _DOCKER_NS_/fabric-couchdb:_FABRIC_RELEASE_
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 5984
+            scheme: HTTP
+          initialDelaySeconds: 20
+          timeoutSeconds: 2
+          periodSeconds: 30
+          successThreshold: 1
+          failureThreshold: 5
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 5984
+            scheme: HTTP
+          initialDelaySeconds: 10
+          timeoutSeconds: 2
+        volumeMounts:
+        - name: couchdb-data-volume
+          mountPath: /var/couchdb/
+        - name: couchdb-config-volume
+          mountPath: /opt/couchdb/etc/local.d
+      - name: peer_PEERID_
+        image: _DOCKER_NS_/fabric-peer:_FABRIC_RELEASE_
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: CORE_PEER_ID
+          value: peer_PEERID_
+        - name: CORE_PEER_GOSSIP_ENDPOINT
+          value: peer_PEERID_:7051
+        - name: CORE_PEER_GOSSIP_EXTERNAL_ENDPOINT
+          value: peer_PEERID_.org1.net:7051
+        - name: CORE_PEER_TLS_ENABLED
+          value: "_TLS_ENABLED_"
+        - name: CORE_LOGGING_LEVEL
+          value: DEBUG
+        - name: CORE_NEXT
+          value: "true"
+        - name: CORE_PEER_GOSSIP_BOOTSTRAP
+          value: peer1:7051
+        args:
+          - sh
+          - -c
+          - tar --no-overwrite-dir -C /etc/hyperledger/fabric -zxf /secrets/config.tgz && peer node start
+        ports:
+        - containerPort: 7051
+        - containerPort: 7053
+        livenessProbe:
+          tcpSocket:
+            port: 7051
+          initialDelaySeconds: 20
+          timeoutSeconds: 5
+          periodSeconds: 30
+          successThreshold: 1
+          failureThreshold: 5
+        readinessProbe:
+          tcpSocket:
+            port: 7051
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
+        volumeMounts:
+        - name: peer-config-data
+          mountPath: /secrets
+          readOnly: true
+        - name: peer-config-volume
+          mountPath: /etc/hyperledger/fabric
+        - name: peer-data-volume
+          mountPath: /var/hyperledger
+      restartPolicy: Always
+      volumes:
+      - name: peer-config-data
+        secret:
+          secretName: peer_PEERID_-config
+      - name: peer-config-volume
+        emptyDir: {}
+      - name: peer-data-volume
+        emptyDir: {}
+      - name: couchdb-data-volume
+        emptyDir: {}
+      - name: couchdb-config-volume
+        configMap:
+          name: couchdb-config
+          defaultMode: 0664

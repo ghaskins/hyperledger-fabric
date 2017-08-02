@@ -69,7 +69,8 @@ COPY payload/docker-entrypoint.sh /
 # Setup directories and permissions
 RUN chmod +x /docker-entrypoint.sh \
  && mkdir /opt/couchdb/data /opt/couchdb/etc/default.d \
- && chown -R couchdb:couchdb /opt/couchdb/
+ && chown -R couchdb:root /opt/couchdb/ \
+ && chmod -R g+rw /opt/couchdb
 
 WORKDIR /opt/couchdb
 EXPOSE 5984 4369 9100
