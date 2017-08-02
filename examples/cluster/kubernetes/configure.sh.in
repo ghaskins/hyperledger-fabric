@@ -1,0 +1,45 @@
+#!/bin/bash
+#
+# Copyright Greg Haskins All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+set -x
+set -e
+
+SCRIPT_DIR=$(dirname $0)
+WORKDIR=`mkdir -d`
+
+configtxgen -profile SampleOrg -outputBlock $WORKDIR/channel.block
+configtxgen -profile SampleChannel -channelID $CONFIGURATOR_CHANNEL_NAME -outputCreateChannelTx $WORKDIR/channel.tx
+configtxgen -profile SampleChannel -channelID $CONFIGURATOR_CHANNEL_NAME -asOrg Org1MSP -outputAnchorPeersUpdate $WORKDIR/anchor.tx
+
+if [ "$CONFIGURATOR_TLS_ENABLED" == "true" ]; then
+   CREATE_OPTS="--tls --cafile $SCRIPT_DIR/orderer-ca.crt"
+fi
+
+until nc -z orderer 7050
+do
+    echo "waiting for orderer..."
+    sleep 1
+done
+
+for TXN in $WORKDIR/*.tx; do
+    peer channel create -o orderer:7050 \
+         -c $CONFIGURATOR_CHANNEL_NAME \
+         -f $TXN \
+         $CREATE_OPTS
+done
+
+for PEER in $CONFIGURATOR_PEERS; do
+    until nc -z $PEER 7051
+    do
+        echo "waiting for $PEER..."
+        sleep 1
+    done
+
+    CORE_PEER_ADDRESS=$PEER:7051 peer channel join -b $WORKDIR/channel.block
+done
+
+rm -rf $WORKDIR
