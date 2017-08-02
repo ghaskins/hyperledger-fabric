@@ -1,0 +1,53 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    hyperledger.fabric.service: configurator
+  name: configurator
+spec:
+  template:
+    metadata:
+      labels:
+        hyperledger.fabric.service: configurator
+    spec:
+      containers:
+      - name: configurator
+        image: _DOCKER_NS_/fabric-tools:_FABRIC_RELEASE_
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: config-data
+          mountPath: /secrets
+          readOnly: true
+        - name: config-volume
+          mountPath: /etc/hyperledger/fabric
+        - name: payload-volume
+          mountPath: /payload
+        env:
+        - name: CONFIGURATOR_TLS_ENABLED
+          value: "_TLS_ENABLED_"
+        - name: CONFIGURATOR_PEERS
+          value: "_PEERS_"
+        - name: CONFIGURATOR_CHANNEL_NAME
+          value: _CHANNEL_NAME_
+        args:
+        - sh
+        - -c
+        - tar --no-overwrite-dir -C /etc/hyperledger/fabric -zxf /secrets/config.tgz && /payload/configure.sh
+      restartPolicy: Never
+      volumes:
+      - name: config-data
+        secret:
+          secretName: cli-config
+      - name: payload-volume
+        configMap:
+          name: configurator-payload
+          items:
+          - key: configure.sh
+            path: configure.sh
+            mode: 0755
+          - key: orderer-ca.crt
+            path: orderer-ca.crt
+            mode: 0444
+      - name: config-volume
+        emptyDir: {}
