@@ -1,0 +1,5 @@
+
+
+message Init {
+        string name = 1;
+}

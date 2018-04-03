@@ -57,6 +57,16 @@ var systemChaincodes = []*SystemChaincode{
 		InvokableExternal: true, // qscc can be invoked to retrieve blocks
 		InvokableCC2CC:    true, // qscc can be invoked to retrieve blocks also by a cc
 	},
+	{
+		Enabled:           true,
+		Name:              "echoscc",
+		Path:              "github.com/hyperledger/fabric/core/scc/echoscc",
+		InitArgs:          [][]byte{[]byte("")},
+		Chaincode:         lscc.NewLifeCycleSysCC(),
+		InvokableExternal: true, // echoscc is invoked to test the system
+		InvokableCC2CC:    true, // echoscc can be invoked by other chaincodes
+	},
+
 }
 
 //DeploySysCCs is the hook for system chaincodes where system chaincodes are registered with the fabric

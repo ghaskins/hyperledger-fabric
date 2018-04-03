@@ -1,0 +1,8 @@
+
+message Payload {
+        string data = 1;
+}
+
+functions {
+        Payload EchoRequest(Payload) = 1;
+}
